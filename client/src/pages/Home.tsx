@@ -239,17 +239,47 @@ export default function Home() {
   }, [darkMode]);
 
   const submitMutation = useMutation({
-    mutationFn: async (): Promise<AnalysisResult> => {
+    mutationFn: (): Promise<AnalysisResult> => new Promise(async (resolve, reject) => {
       const form = new FormData();
       form.append("resume", resumeFile!);
       form.append("jobDescription", jobDesc);
-      const res = await fetch(`/api/analyze`, { method: "POST", body: form });
+
+      let res: Response;
+      try {
+        res = await fetch(`/api/analyze`, { method: "POST", body: form });
+      } catch {
+        return reject(new Error("Network error — please try again."));
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "Failed to analyze");
+        return reject(new Error(err.error || "Failed to analyze"));
       }
-      return res.json() as Promise<AnalysisResult>;
-    },
+
+      // Read SSE stream
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          const eventLine = part.split("\n").find(l => l.startsWith("event:"));
+          const dataLine = part.split("\n").find(l => l.startsWith("data:"));
+          if (!dataLine) continue;
+          const eventName = eventLine ? eventLine.replace("event:", "").trim() : "message";
+          const data = JSON.parse(dataLine.replace("data:", "").trim());
+          if (eventName === "result") return resolve(data as AnalysisResult);
+          if (eventName === "error") return reject(new Error(data.error));
+          // token / ping — ignore, keep reading
+        }
+      }
+      reject(new Error("No result received. Please try again."));
+    }),
     onSuccess: (data) => {
       setResult(data);
       setActiveTab("feedback");

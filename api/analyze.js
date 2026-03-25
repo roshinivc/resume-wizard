@@ -1,17 +1,16 @@
-// Vercel serverless function — handles file upload + AI analysis
+// Vercel serverless function — streams response to avoid timeout
 import Anthropic from "@anthropic-ai/sdk";
 import { IncomingForm } from "formidable";
 import { readFile } from "fs/promises";
 
 export const config = {
-  api: { bodyParser: false }, // required for file uploads
+  api: { bodyParser: false },
 };
 
 async function extractText(buffer, mimetype, filename) {
   const ext = filename.split(".").pop()?.toLowerCase();
 
   if (mimetype === "application/pdf" || ext === "pdf") {
-    // Pure JS PDF parser — works on Vercel (no system tools needed)
     const pdfParse = (await import("pdf-parse-fork")).default;
     const data = await pdfParse(buffer);
     return data.text;
@@ -35,10 +34,10 @@ async function extractText(buffer, mimetype, filename) {
 
 const SYSTEM_PROMPT = `You are a senior hiring manager and resume coach. Analyze the resume against the job description.
 
-IMPORTANT RULES for corrections:
+RULES for corrections:
 - Only suggest changes based on what is ALREADY TRUE in the resume
-- Never invent experience, skills, or achievements the candidate doesn't have
-- Rephrase existing content to be stronger, more quantified, and more aligned with JD language
+- Never invent experience, skills, or achievements
+- Rephrase existing content to be stronger and more aligned with JD language
 
 Respond with ONLY valid JSON, no markdown fences:
 {
@@ -53,13 +52,12 @@ Respond with ONLY valid JSON, no markdown fences:
     {"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 highest-impact changes","details":["<change 1>","<change 2>","<change 3>"]}
   ],
   "corrections": [
-    {"section":"<resume section>","original":"<exact text>","improved":"<rewritten — stronger, still truthful>","why":"<1 sentence>"}
+    {"section":"<resume section>","original":"<exact text>","improved":"<rewritten>","why":"<1 sentence>"}
   ],
-  "coverLetter": "<full cover letter, 3-4 paragraphs, Dear Hiring Manager, ~300 words, specific to this JD and resume>"
+  "coverLetter": "<full cover letter ~300 words, Dear Hiring Manager, tailored to this JD>"
 }`;
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -81,7 +79,7 @@ export default async function handler(req, res) {
   const resumeFile = Array.isArray(files.resume) ? files.resume[0] : files.resume;
 
   if (!resumeFile) return res.status(400).json({ error: "Please upload a resume file." });
-  if (!jobDescription || jobDescription.trim().length < 20)
+  if (!jobDescription?.trim().length < 20)
     return res.status(400).json({ error: "Please paste a job description." });
 
   let resumeText;
@@ -93,11 +91,24 @@ export default async function handler(req, res) {
   }
 
   if (resumeText.trim().length < 50)
-    return res.status(400).json({ error: "The resume file appears to be empty or unreadable." });
+    return res.status(400).json({ error: "Resume appears empty or unreadable." });
+
+  // Stream SSE so Vercel doesn't timeout
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  // Keep-alive ping every 4s
+  const ping = setInterval(() => {
+    try { res.write("event: ping\ndata: {}\n\n"); } catch (_) {}
+  }, 4000);
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const message = await client.messages.create({
+
+    let fullText = "";
+    const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
       max_tokens: 6000,
       system: SYSTEM_PROMPT,
@@ -107,18 +118,29 @@ export default async function handler(req, res) {
       }],
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    const parsed = JSON.parse(raw.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim());
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        fullText += event.delta.text;
+        res.write(`event: token\ndata: ${JSON.stringify({ t: event.delta.text })}\n\n`);
+      }
+    }
 
-    return res.json({
+    const jsonStr = fullText.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
+    const parsed = JSON.parse(jsonStr);
+
+    clearInterval(ping);
+    res.write(`event: result\ndata: ${JSON.stringify({
       score: parsed.score,
       scoreRationale: parsed.scoreRationale,
       sections: parsed.sections,
       corrections: parsed.corrections || [],
       coverLetter: parsed.coverLetter || "",
-    });
+    })}\n\n`);
+    res.end();
   } catch (err) {
     console.error("Error:", err);
-    return res.status(500).json({ error: "Analysis failed. Please try again." });
+    clearInterval(ping);
+    res.write(`event: error\ndata: ${JSON.stringify({ error: "Analysis failed. Please try again." })}\n\n`);
+    res.end();
   }
 }
