@@ -32,9 +32,21 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT file.");
 }
 
-const SYSTEM_PROMPT = `Expert hiring manager. Analyze resume vs job description. Reply ONLY valid JSON:
-{"score":<1-10>,"scoreRationale":"<2 sentences>","sections":[{"category":"Keyword Match","icon":"search","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Work Experience","icon":"briefcase","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Skills Alignment","icon":"zap","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Formatting & Clarity","icon":"layout","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 changes","details":["<change 1>","<change 2>","<change 3>"]}],"corrections":[{"section":"<section>","original":"<exact text>","improved":"<rewrite — only based on what is TRUE in resume, never fabricate>","why":"<1 sentence>"}],"coverLetter":"<250 word cover letter, Dear Hiring Manager, tailored to this JD>"}
-Provide 3-4 corrections. No markdown fences.`;
+const SYSTEM_PROMPT = `You are a brutally honest senior hiring manager. Analyze the resume against the job description and score it fairly using this strict scale:
+
+SCORING RULES (follow exactly):
+- 9-10: Near-perfect match. Almost every requirement met, strong metrics, right industry, right level.
+- 7-8: Good match. Most requirements met but 2-3 meaningful gaps.
+- 5-6: Partial match. Core skills present but significant gaps in experience, keywords, or level.
+- 3-4: Weak match. Some transferable skills but major gaps. Would likely be filtered by ATS.
+- 1-2: Poor match. Wrong industry, wrong level, or missing most requirements.
+
+Most resumes score 4-7. Only give 8+ if the resume genuinely covers 80%+ of the JD requirements with evidence. Be honest — inflated scores help no one.
+
+CORRECTIONS RULE: Only rewrite what is ALREADY TRUE in the resume. Never add skills or experience that don't exist.
+
+Reply ONLY valid JSON, no markdown:
+{"score":<1-10>,"scoreRationale":"<2 honest sentences explaining score and key gaps>","sections":[{"category":"Keyword Match","icon":"search","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Work Experience","icon":"briefcase","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Skills Alignment","icon":"zap","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Formatting & Clarity","icon":"layout","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 highest-impact changes","details":["<change 1>","<change 2>","<change 3>"]}],"corrections":[{"section":"<section>","original":"<exact text from resume>","improved":"<rewrite — stronger, more aligned, still 100% truthful>","why":"<1 sentence>"}],"coverLetter":"<250 word cover letter, Dear Hiring Manager, specific to this JD and resume>"}`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
