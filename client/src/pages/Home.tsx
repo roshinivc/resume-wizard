@@ -243,7 +243,7 @@ export default function Home() {
       const form = new FormData();
       form.append("resume", resumeFile!);
       form.append("jobDescription", jobDesc);
-      const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: form });
+      const res = await fetch(`/api/analyze`, { method: "POST", body: form });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error || "Failed to analyze");
