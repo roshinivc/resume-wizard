@@ -1,13 +1,7 @@
 // Vercel serverless function — handles file upload + AI analysis
 import Anthropic from "@anthropic-ai/sdk";
 import { IncomingForm } from "formidable";
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { readFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-
-const execFileAsync = promisify(execFile);
+import { readFile } from "fs/promises";
 
 export const config = {
   api: { bodyParser: false }, // required for file uploads
@@ -17,17 +11,10 @@ async function extractText(buffer, mimetype, filename) {
   const ext = filename.split(".").pop()?.toLowerCase();
 
   if (mimetype === "application/pdf" || ext === "pdf") {
-    const tmpIn = join(tmpdir(), `resume_${Date.now()}.pdf`);
-    const tmpOut = join(tmpdir(), `resume_${Date.now()}.txt`);
-    try {
-      const { writeFile } = await import("fs/promises");
-      await writeFile(tmpIn, buffer);
-      await execFileAsync("pdftotext", ["-layout", tmpIn, tmpOut]);
-      return await readFile(tmpOut, "utf-8");
-    } finally {
-      await unlink(tmpIn).catch(() => {});
-      await unlink(tmpOut).catch(() => {});
-    }
+    // Pure JS PDF parser — works on Vercel (no system tools needed)
+    const pdfParse = (await import("pdf-parse-fork")).default;
+    const data = await pdfParse(buffer);
+    return data.text;
   }
 
   if (
