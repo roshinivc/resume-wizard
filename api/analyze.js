@@ -84,7 +84,14 @@ export default async function handler(req, res) {
   }, 4000);
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      clearInterval(ping);
+      res.write(`event: error\ndata: ${JSON.stringify({ error: "API key not configured. Please add ANTHROPIC_API_KEY in Vercel environment variables." })}\n\n`);
+      return res.end();
+    }
+
+    const client = new Anthropic({ apiKey });
 
     let fullText = "";
     const stream = await client.messages.stream({
@@ -119,7 +126,8 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error("Error:", err);
     clearInterval(ping);
-    res.write(`event: error\ndata: ${JSON.stringify({ error: "Analysis failed. Please try again." })}\n\n`);
+    const msg = err?.message || "Analysis failed. Please try again.";
+    res.write(`event: error\ndata: ${JSON.stringify({ error: msg })}\n\n`);
     res.end();
   }
 }
