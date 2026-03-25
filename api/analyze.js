@@ -32,30 +32,9 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT file.");
 }
 
-const SYSTEM_PROMPT = `You are a senior hiring manager and resume coach. Analyze the resume against the job description.
-
-RULES for corrections:
-- Only suggest changes based on what is ALREADY TRUE in the resume
-- Never invent experience, skills, or achievements
-- Rephrase existing content to be stronger and more aligned with JD language
-
-Respond with ONLY valid JSON, no markdown fences:
-{
-  "score": <1-10>,
-  "scoreRationale": "<2-3 sentences>",
-  "sections": [
-    {"category":"Keyword Match","icon":"search","rating":"strong|moderate|weak","summary":"<1 sentence>","details":["<point>","<point>","<point>"]},
-    {"category":"Work Experience","icon":"briefcase","rating":"strong|moderate|weak","summary":"<1 sentence>","details":["<point>","<point>","<point>"]},
-    {"category":"Skills Alignment","icon":"zap","rating":"strong|moderate|weak","summary":"<1 sentence>","details":["<point>","<point>","<point>"]},
-    {"category":"Impact & Metrics","icon":"trending-up","rating":"strong|moderate|weak","summary":"<1 sentence>","details":["<point>","<point>","<point>"]},
-    {"category":"Formatting & Clarity","icon":"layout","rating":"strong|moderate|weak","summary":"<1 sentence>","details":["<point>","<point>","<point>"]},
-    {"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 highest-impact changes","details":["<change 1>","<change 2>","<change 3>"]}
-  ],
-  "corrections": [
-    {"section":"<resume section>","original":"<exact text>","improved":"<rewritten>","why":"<1 sentence>"}
-  ],
-  "coverLetter": "<full cover letter ~300 words, Dear Hiring Manager, tailored to this JD>"
-}`;
+const SYSTEM_PROMPT = `Expert hiring manager. Analyze resume vs job description. Reply ONLY valid JSON:
+{"score":<1-10>,"scoreRationale":"<2 sentences>","sections":[{"category":"Keyword Match","icon":"search","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Work Experience","icon":"briefcase","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Skills Alignment","icon":"zap","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Formatting & Clarity","icon":"layout","rating":"strong|moderate|weak","summary":"<brief>","details":["<point>","<point>","<point>"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 changes","details":["<change 1>","<change 2>","<change 3>"]}],"corrections":[{"section":"<section>","original":"<exact text>","improved":"<rewrite — only based on what is TRUE in resume, never fabricate>","why":"<1 sentence>"}],"coverLetter":"<250 word cover letter, Dear Hiring Manager, tailored to this JD>"}
+Provide 3-4 corrections. No markdown fences.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -110,11 +89,11 @@ export default async function handler(req, res) {
     let fullText = "";
     const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
-      max_tokens: 6000,
+      max_tokens: 4000,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 6000)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 3000)}`,
+        content: `RESUME:\n${resumeText.slice(0, 4000)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2000)}`,
       }],
     });
 
