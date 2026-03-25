@@ -58,7 +58,7 @@ export default async function handler(req, res) {
   const resumeFile = Array.isArray(files.resume) ? files.resume[0] : files.resume;
 
   if (!resumeFile) return res.status(400).json({ error: "Please upload a resume file." });
-  if (!jobDescription?.trim().length < 20)
+  if (!jobDescription || jobDescription.trim().length < 20)
     return res.status(400).json({ error: "Please paste a job description." });
 
   let resumeText;
