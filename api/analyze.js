@@ -90,7 +90,7 @@ The JSON must follow this exact structure:
   ],
   "coverLetter": "Full 250-word cover letter starting with Dear Hiring Manager, tailored to this specific job description using actual experience from the resume.",
   "hiringManagerNote": "A concise 8-10 line direct message to the hiring manager. Conversational, confident, not a cover letter. Opens with one specific thing about the company or role that genuinely excites the candidate based on the JD. Then connects 2-3 specific achievements from the resume directly to what the role needs. Closes with a clear ask for a conversation. No generic phrases like 'I am writing to express my interest'. Sounds like a real person, not a template.",
-  "whyBestCandidate": "5-6 bullet points explaining exactly why this candidate is the strongest choice for this specific role. Each bullet must reference a specific achievement or skill from the resume matched to a specific requirement from the JD. Be direct and confident — this is a pitch, not a summary. Format each bullet as: [Strength]: [Evidence from resume] — [Why it matters for this role]."
+  "whyBestCandidate": "5-6 lines separated by newline characters (\\n). Each line is one reason why this candidate is the best fit. Format each line as: Strength label: Evidence from resume — Why it matters for this specific role. No bullet symbols, no markdown, just plain text lines separated by \\n."
 }
 
 Replace the example values with real analysis. Provide 3-4 corrections. Rating values must be exactly: strong, moderate, or weak.`;

@@ -432,20 +432,25 @@ export default function Home() {
                 <div className="cover-letter-toolbar">
                   <h3 className="cover-letter-title">Why I'm the Best Candidate</h3>
                   <div className="cover-letter-actions">
-                    <button className="cl-btn" onClick={() => {
-                      navigator.clipboard.writeText(result.whyBestCandidate);
-                    }}>
+                    <button className="cl-btn" onClick={() => navigator.clipboard.writeText(result.whyBestCandidate)}>
                       <Copy size={14} /> Copy
                     </button>
                   </div>
                 </div>
                 <div className="why-me-body">
-                  {result.whyBestCandidate.split("\n").filter(l => l.trim()).map((line, i) => (
-                    <div key={i} className="why-me-item">
-                      <span className="why-me-bullet">✦</span>
-                      <span>{line.replace(/^[•\-\*\d\.]+\s*/, "")}</span>
-                    </div>
-                  ))}
+                  {result.whyBestCandidate
+                    ? result.whyBestCandidate
+                        .split(/\n+/)
+                        .map(l => l.replace(/^[\s•\-\*]+/, "").trim())
+                        .filter(l => l.length > 3)
+                        .map((line, i) => (
+                          <div key={i} className="why-me-item">
+                            <span className="why-me-bullet">✦</span>
+                            <span>{line}</span>
+                          </div>
+                        ))
+                    : <p style={{color:"var(--color-text-muted)",padding:"var(--space-6)"}}>No content returned — please try analyzing again.</p>
+                  }
                 </div>
               </div>
             )}
