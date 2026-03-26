@@ -83,9 +83,10 @@ The JSON must follow this exact structure:
   "corrections": [
     {
       "section": "Which resume section",
-      "original": "Exact text from resume.",
-      "improved": "Rewritten version — stronger, more aligned, still 100% truthful.",
-      "why": "One sentence explanation."
+      "original": "Exact original text copied from the resume.",
+      "improved": "Rewritten version — stronger, more aligned with JD language, still 100% grounded in the original. Uses the same facts, same numbers, same role — just rephrased to be clearer and more impactful.",
+      "merged": "The final ready-to-use sentence that combines the strongest parts of both original and improved. This is what the candidate should paste directly into their resume. It must sound like the candidate wrote it, not AI. Every fact, number, and achievement must come from the original text only.",
+      "why": "One sentence explaining what changed and why it strengthens the resume for this specific JD."
     }
   ],
   "coverLetter": "Full 250-word cover letter starting with Dear Hiring Manager, tailored to this specific job description using actual experience from the resume.",
@@ -175,7 +176,13 @@ export default async function handler(req, res) {
       score: parsed.score,
       scoreRationale: parsed.scoreRationale,
       sections: parsed.sections,
-      corrections: parsed.corrections || [],
+      corrections: (parsed.corrections || []).map((c) => ({
+        section: c.section,
+        original: c.original,
+        improved: c.improved,
+        merged: c.merged || "",
+        why: c.why,
+      })),
       coverLetter: parsed.coverLetter || "",
       hiringManagerNote: parsed.hiringManagerNote || "",
       whyBestCandidate: parsed.whyBestCandidate || "",

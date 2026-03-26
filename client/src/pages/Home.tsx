@@ -24,6 +24,7 @@ interface Correction {
   section: string;
   original: string;
   improved: string;
+  merged: string;
   why: string;
 }
 
@@ -100,6 +101,14 @@ function FeedbackCard({ section }: { section: FeedbackSection }) {
 
 function CorrectionCard({ correction, index }: { correction: Correction; index: number }) {
   const [open, setOpen] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(correction.merged || correction.improved);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <div className="correction-card">
       <button className="correction-header" onClick={() => setOpen(o => !o)}>
@@ -109,6 +118,7 @@ function CorrectionCard({ correction, index }: { correction: Correction; index: 
       </button>
       {open && (
         <div className="correction-body">
+          {/* Original vs Improved side by side */}
           <div className="correction-row">
             <div className="correction-col correction-col--before">
               <span className="correction-label correction-label--before">Original</span>
@@ -120,6 +130,20 @@ function CorrectionCard({ correction, index }: { correction: Correction; index: 
               <p className="correction-text correction-text--improved">{correction.improved}</p>
             </div>
           </div>
+
+          {/* Merged — ready to paste */}
+          {(correction.merged) && (
+            <div className="correction-merged">
+              <div className="correction-merged-header">
+                <span className="correction-merged-label">✏️ Ready to paste into your resume</span>
+                <button className="cl-btn" onClick={handleCopy}>
+                  {copied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
+                </button>
+              </div>
+              <p className="correction-merged-text">{correction.merged}</p>
+            </div>
+          )}
+
           <p className="correction-why"><strong>Why:</strong> {correction.why}</p>
         </div>
       )}
