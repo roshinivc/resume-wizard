@@ -33,6 +33,8 @@ interface AnalysisResult {
   sections: FeedbackSection[];
   corrections: Correction[];
   coverLetter: string;
+  hiringManagerNote: string;
+  whyBestCandidate: string;
 }
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
@@ -223,7 +225,7 @@ function DropZone({ file, onFile, disabled }: { file: File | null; onFile: (f: F
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = "feedback" | "corrections" | "cover-letter";
+type Tab = "feedback" | "corrections" | "cover-letter" | "manager-note" | "why-me";
 
 export default function Home() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -391,6 +393,14 @@ export default function Home() {
                 onClick={() => setActiveTab("cover-letter")}>
                 Cover Letter
               </button>
+              <button className={`result-tab${activeTab === "manager-note" ? " result-tab--active" : ""}`}
+                onClick={() => setActiveTab("manager-note")}>
+                Message to Manager
+              </button>
+              <button className={`result-tab${activeTab === "why-me" ? " result-tab--active" : ""}`}
+                onClick={() => setActiveTab("why-me")}>
+                Why I'm the Best Fit
+              </button>
             </div>
 
             {/* Tab content */}
@@ -411,6 +421,33 @@ export default function Home() {
 
             {activeTab === "cover-letter" && (
               <CoverLetterPanel text={result.coverLetter} />
+            )}
+
+            {activeTab === "manager-note" && (
+              <CoverLetterPanel text={result.hiringManagerNote} />
+            )}
+
+            {activeTab === "why-me" && (
+              <div className="why-me-panel">
+                <div className="cover-letter-toolbar">
+                  <h3 className="cover-letter-title">Why I'm the Best Candidate</h3>
+                  <div className="cover-letter-actions">
+                    <button className="cl-btn" onClick={() => {
+                      navigator.clipboard.writeText(result.whyBestCandidate);
+                    }}>
+                      <Copy size={14} /> Copy
+                    </button>
+                  </div>
+                </div>
+                <div className="why-me-body">
+                  {result.whyBestCandidate.split("\n").filter(l => l.trim()).map((line, i) => (
+                    <div key={i} className="why-me-item">
+                      <span className="why-me-bullet">✦</span>
+                      <span>{line.replace(/^[•\-\*\d\.]+\s*/, "")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </section>
         )}
