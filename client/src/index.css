@@ -28,10 +28,10 @@
   --transition-interactive: 180ms cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Surfaces */
-  --color-bg: #f5f4f0;
-  --color-surface: #fafaf8;
-  --color-surface-offset: #edecea;
-  --color-surface-dynamic: #e4e3e0;
+  --color-bg: #e8ddd0;
+  --color-surface: #ede3d8;
+  --color-surface-offset: #dfd3c4;
+  --color-surface-dynamic: #d4c7b6;
   --color-border: #d3d1cc;
   --color-divider: #dbd9d5;
 
