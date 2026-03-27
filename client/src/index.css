@@ -980,3 +980,7 @@ button { cursor: pointer; background: none; border: none; }
 .locked-icon { color: var(--color-text-faint); margin-bottom: var(--space-3); }
 .locked-title { font-size: var(--text-base); font-weight: 700; margin-bottom: var(--space-2); }
 .locked-sub { font-size: var(--text-sm); color: var(--color-text-muted); }
+
+/* ─── Char count warnings ────────────────────────────────────────────────────── */
+.char-count--warn { color: var(--color-warning) !important; font-weight: 600; }
+.char-count--over { color: var(--color-error) !important; font-weight: 600; }
