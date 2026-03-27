@@ -451,9 +451,17 @@ export default function Home() {
       </main>
 
       <footer className="site-footer">
-        <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" className="footer-link">
-          Created with Perplexity Computer
-        </a>
+        <p className="footer-disclaimer">
+          ⚠️ All analysis is AI-generated. Use your own judgment before applying any suggestions.
+          Resume Wizard is not responsible for job application outcomes.
+        </p>
+        <div className="footer-links-row">
+          <a href="https://roshinivc.github.io/resume-wizard/privacy.html" target="_blank" rel="noopener noreferrer" className="footer-link">Privacy Policy</a>
+          <span className="footer-dot">·</span>
+          <a href="https://roshinivc.github.io/resume-wizard/terms.html" target="_blank" rel="noopener noreferrer" className="footer-link">Terms of Service</a>
+          <span className="footer-dot">·</span>
+          <a href="https://www.perplexity.ai/computer" target="_blank" rel="noopener noreferrer" className="footer-link">Created with Perplexity Computer</a>
+        </div>
       </footer>
     </div>
   );
