@@ -462,7 +462,7 @@ export default function Home() {
             <img src="/logo.png" alt="Resume Wizard" className="logo-img" />
             <div>
               <h1 className="logo-name">Resume Wizard</h1>
-              <p className="logo-tagline">Match your resume to any job</p>
+              <p className="logo-tagline">Built by a job seeker, for job seekers — honest AI feedback that respects your time.</p>
             </div>
           </div>
           <div className="header-right">
