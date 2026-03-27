@@ -32,8 +32,9 @@ export default async function handler(req, res) {
     });
 
     if (error) {
-      console.error("Magic link error:", error.message);
-      return res.status(500).json({ error: "Failed to send magic link. Please try again." });
+      console.error("Magic link error:", error.message, error.status, error.code);
+      // Return the actual Supabase error in dev so we can diagnose
+      return res.status(500).json({ error: `Magic link failed: ${error.message}` });
     }
 
     return res.json({ ok: true, message: "Check your email for the magic link!" });
