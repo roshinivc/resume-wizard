@@ -24,72 +24,36 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT.");
 }
 
-// Increment usage count server-side (reliable — not dependent on frontend callback)
 async function incrementUsage(fingerprint, emailHeader) {
   try {
-    // Look up existing record
     let data = null;
     if (emailHeader) {
-      const { data: emailData } = await supabase
-        .from("usage").select("fingerprint, count, paid, plan, email")
+      const { data: d } = await supabase.from("usage").select("fingerprint,count,paid,plan,email")
         .eq("email", emailHeader).order("last_used", { ascending: false }).limit(1).single();
-      data = emailData;
+      data = d;
     }
     if (!data) {
-      const { data: fpData } = await supabase
-        .from("usage").select("fingerprint, count, paid, plan, email")
+      const { data: d } = await supabase.from("usage").select("fingerprint,count,paid,plan,email")
         .eq("fingerprint", fingerprint).single();
-      data = fpData;
+      data = d;
     }
-
     if (data) {
-      const newCount = (data.count || 0) + 1;
-      const updateBy = data.email ? { col: "email", val: data.email } : { col: "fingerprint", val: data.fingerprint || fingerprint };
-      await supabase.from("usage")
-        .update({ count: newCount, last_used: new Date().toISOString() })
-        .eq(updateBy.col, updateBy.val);
+      const col = data.email ? "email" : "fingerprint";
+      const val = data.email || data.fingerprint || fingerprint;
+      await supabase.from("usage").update({ count: (data.count || 0) + 1, last_used: new Date().toISOString() }).eq(col, val);
     } else {
-      await supabase.from("usage").insert({
-        fingerprint,
-        count: 1,
-        paid: false,
-        plan: "free",
-        last_used: new Date().toISOString(),
-        ...(emailHeader ? { email: emailHeader } : {}),
-      });
+      await supabase.from("usage").insert({ fingerprint, count: 1, paid: false, plan: "free", last_used: new Date().toISOString(), ...(emailHeader ? { email: emailHeader } : {}) });
     }
-  } catch (e) {
-    console.error("Usage increment error:", e.message);
-  }
+  } catch (e) { console.error("Usage error:", e.message); }
 }
 
-// Compact prompt — shorter output = faster response = no timeout
-const SYSTEM_PROMPT = `You are a senior hiring manager scoring resumes against job descriptions.
+// Minimal prompt — every token saved = faster response
+const SYSTEM_PROMPT = `Senior hiring manager. Score resume vs job description. Return ONLY valid JSON, no markdown.
 
-SCORING: 9-10=80%+ match. 7-8=good, 2-3 gaps. 5-6=partial. 3-4=weak. 1-2=poor. Most score 4-7.
-CORRECTIONS: Only rewrite text already in the resume. Never invent anything.
-Return ONLY valid JSON, no markdown.
+JSON structure:
+{"score":7,"scoreRationale":"2 sentences.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"1 sentence.","details":["x","x","x"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"1 sentence.","details":["x","x","x"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"1 sentence.","details":["x","x","x"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"1 sentence.","details":["x","x","x"]},{"category":"Formatting & Clarity","icon":"layout","rating":"strong","summary":"1 sentence.","details":["x","x","x"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top changes.","details":["x","x","x"]}],"corrections":[{"section":"s","original":"exact text","improved":"rewrite","why":"reason"},{"section":"s","original":"exact text","improved":"rewrite","why":"reason"},{"section":"s","original":"exact text","improved":"rewrite","why":"reason"}],"coverLetter":"120 words. Dear Hiring Manager, [body]. Sincerely.","hiringManagerNote":"5-6 lines. Direct, specific, no generic openers.","whyBestCandidate":"4 lines separated by \\n. Label: evidence — relevance."}
 
-{
-  "score": 6,
-  "scoreRationale": "Two sentences max.",
-  "sections": [
-    {"category":"Keyword Match","icon":"search","rating":"moderate","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
-    {"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
-    {"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
-    {"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
-    {"category":"Formatting & Clarity","icon":"layout","rating":"strong","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
-    {"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 changes.","details":["Change 1.","Change 2.","Change 3."]}
-  ],
-  "corrections": [
-    {"section":"Section name","original":"Exact text from resume.","improved":"Rewritten version.","why":"One sentence."}
-  ],
-  "coverLetter": "150-word cover letter. Dear Hiring Manager, [body]. Sincerely, [name]",
-  "hiringManagerNote": "6-8 lines. Direct, confident, specific to this role. No generic openers.",
-  "whyBestCandidate": "4-5 lines separated by \\n. Each: Label: Evidence — Why it matters."
-}
-
-Provide exactly 3 corrections. Ratings must be: strong, moderate, or weak.`;
+Rules: score 4-7 for most resumes. rating values: strong/moderate/weak only. corrections: rewrite only existing resume text.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -110,7 +74,6 @@ export default async function handler(req, res) {
   if (!jobDescription || jobDescription.trim().length < 20)
     return res.status(400).json({ error: "Please paste a job description." });
 
-  // Get fingerprint + email from headers (passed by frontend)
   const fingerprint = req.headers["x-fp"] || "unknown";
   const emailHeader = req.headers["x-email"] || null;
   const adminToken = req.headers["x-admin-token"] || null;
@@ -145,36 +108,28 @@ export default async function handler(req, res) {
     }
 
     const client = new Anthropic({ apiKey });
-    let fullText = "";
 
-    const stream = await client.messages.stream({
+    // Single non-streaming call — simpler, more reliable, ~5-10s for Haiku
+    const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 3000,
+      max_tokens: 2500,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 1500)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1500)}`
+        content: `RESUME:\n${resumeText.slice(0, 1200)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1200)}`
       }]
     });
 
-    for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        fullText += event.delta.text;
-        res.write(`event: token\ndata: ${JSON.stringify({ t: event.delta.text })}\n\n`);
-      }
-    }
+    const fullText = message.content[0]?.text || "";
 
-    // Extract JSON — find first { and last }
+    // Extract JSON
     let jsonStr = fullText.replace(/^```json?\s*/i, "").replace(/```\s*$/g, "").trim();
     const start = jsonStr.indexOf("{");
     const end = jsonStr.lastIndexOf("}");
-    if (start !== -1 && end !== -1) jsonStr = jsonStr.slice(start, end + 1);
+    if (start === -1) throw new Error("AI did not return valid JSON. Please try again.");
+    jsonStr = jsonStr.slice(start, end + 1);
 
-    if (!jsonStr || start === -1) {
-      throw new Error("AI did not return valid JSON. Please try again.");
-    }
-
-    // Try parse — repair if truncated
+    // Parse with repair fallback
     let parsed;
     try {
       parsed = JSON.parse(jsonStr);
@@ -198,14 +153,10 @@ export default async function handler(req, res) {
       catch { throw new Error("Analysis response was incomplete. Please try again."); }
     }
 
-    if (!parsed.score || !parsed.sections) {
-      throw new Error("Incomplete analysis returned. Please try again.");
-    }
+    if (!parsed.score || !parsed.sections) throw new Error("Incomplete analysis. Please try again.");
 
-    // Increment usage server-side (reliable — works even if browser closes)
-    if (!isAdmin) {
-      await incrementUsage(fingerprint, emailHeader);
-    }
+    // Increment usage server-side
+    if (!isAdmin) await incrementUsage(fingerprint, emailHeader);
 
     clearInterval(ping);
     res.write(`event: result\ndata: ${JSON.stringify({
@@ -220,7 +171,7 @@ export default async function handler(req, res) {
     res.end();
 
   } catch (err) {
-    console.error("Error:", err);
+    console.error("Analyze error:", err);
     clearInterval(ping);
     res.write(`event: error\ndata: ${JSON.stringify({ error: err?.message || "Analysis failed. Please try again." })}\n\n`);
     res.end();
