@@ -48,6 +48,130 @@ interface UsageStatus {
   email: string | null;
 }
 
+// ─── Landing Screen ─────────────────────────────────────────────────────────
+
+function LandingScreen({ onSignIn, onSkip }: {
+  onSignIn: (email: string) => void;
+  onSkip: () => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSend() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, fingerprint: sessionStorage.getItem("rw_fp") || "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send link");
+      setSent(true);
+      sessionStorage.setItem("rw_email", email);
+      onSignIn(email);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="landing-screen">
+      <div className="landing-inner">
+        {/* Logo + headline */}
+        <div className="landing-logo-row">
+          <img src="/logo.png" alt="Resume Wizard" className="landing-logo" />
+          <div>
+            <h1 className="landing-title">Resume Wizard</h1>
+            <p className="landing-tagline">Built by a job seeker, for job seekers</p>
+          </div>
+        </div>
+
+        <h2 className="landing-headline">Know your exact match score<br/>before you hit apply.</h2>
+        <p className="landing-sub">Upload your resume, paste a job description. Get a score out of 10, honest corrections, and a tailored cover letter — in seconds.</p>
+
+        {/* Free badge */}
+        <div className="landing-free-badge">
+          <CheckCircle2 size={14} />
+          <span><strong>3 free analyses</strong> included — no credit card required</span>
+        </div>
+
+        {/* Sign-in card */}
+        <div className="landing-card">
+          {!sent ? (
+            <>
+              <p className="landing-card-title">Sign in with your email to get started</p>
+              <p className="landing-card-sub">We'll send a magic link — no password needed. Works on any device.</p>
+              <div className="landing-input-row">
+                <input
+                  className="landing-input"
+                  type="email"
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSend()}
+                  autoFocus
+                  data-testid="input-landing-email"
+                />
+                <button
+                  className="landing-btn"
+                  onClick={handleSend}
+                  disabled={loading}
+                  data-testid="button-landing-signin"
+                >
+                  {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+                  {loading ? "Sending…" : "Get Free Access"}
+                </button>
+              </div>
+              {error && <p className="landing-error">{error}</p>}
+              <button className="landing-skip" onClick={onSkip} data-testid="button-landing-skip">
+                Skip for now — try without saving progress →
+              </button>
+            </>
+          ) : (
+            <div className="landing-sent">
+              <CheckCircle2 size={36} className="landing-sent-icon" />
+              <p className="landing-sent-title">Magic link sent to <strong>{email}</strong></p>
+              <p className="landing-sent-sub">Check your inbox and click the link. You can also start analyzing now — your session is saved.</p>
+              <button className="landing-btn" style={{marginTop:"var(--space-4)"}} onClick={onSkip}>
+                Continue to app →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Pricing summary */}
+        <div className="landing-plans">
+          <div className="landing-plan">
+            <div className="landing-plan-name">Free</div>
+            <div className="landing-plan-price">$0</div>
+            <div className="landing-plan-desc">3 analyses · Score + feedback</div>
+          </div>
+          <div className="landing-plan landing-plan--featured">
+            <div className="landing-plan-name">Pay As You Go</div>
+            <div className="landing-plan-price">$0.99<span>/analysis</span></div>
+            <div className="landing-plan-desc">All 5 tabs · No subscription</div>
+          </div>
+          <div className="landing-plan">
+            <div className="landing-plan-name">Monthly</div>
+            <div className="landing-plan-price">$5.99<span>/mo</span></div>
+            <div className="landing-plan-desc">15 analyses · Cancel anytime</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Login Modal ──────────────────────────────────────────────────────────────
 
 function LoginModal({ onClose, onSuccess }: {
@@ -413,15 +537,23 @@ export default function Home() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
+  // Show landing screen for new users (no saved email, no admin token)
+  const [showLanding, setShowLanding] = useState(() => {
+    const hasEmail = !!sessionStorage.getItem("rw_email");
+    const hasAdmin = !!sessionStorage.getItem("rw_admin");
+    const hasSkipped = !!sessionStorage.getItem("rw_skipped");
+    return !hasEmail && !hasAdmin && !hasSkipped;
+  });
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Admin token from URL param — stored in sessionStorage
+  // Admin token from URL param — stored in sessionStorage, also bypasses landing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("admin");
     if (token) {
       sessionStorage.setItem("rw_admin", token);
+      setShowLanding(false);
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
@@ -509,8 +641,21 @@ export default function Home() {
 
   function handleLogout() {
     sessionStorage.removeItem("rw_email");
+    sessionStorage.removeItem("rw_skipped");
     setLoggedInEmail(null);
+    setShowLanding(true);
     refetchUsage();
+  }
+
+  function handleLandingSignIn(email: string) {
+    setLoggedInEmail(email);
+    setShowLanding(false);
+    setTimeout(() => refetchUsage(), 500);
+  }
+
+  function handleLandingSkip() {
+    sessionStorage.setItem("rw_skipped", "1");
+    setShowLanding(false);
   }
 
   const submitMutation = useMutation({
@@ -600,6 +745,11 @@ export default function Home() {
     setJobDesc("");
     setResult(null);
     submitMutation.reset();
+  }
+
+  // Show landing screen for new visitors
+  if (showLanding) {
+    return <LandingScreen onSignIn={handleLandingSignIn} onSkip={handleLandingSkip} />;
   }
 
   return (
