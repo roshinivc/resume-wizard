@@ -147,11 +147,11 @@ export default async function handler(req, res) {
 
     const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 2500)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2500)}`
+        content: `RESUME:\n${resumeText.slice(0, 1800)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1800)}`
       }]
     });
 
@@ -172,7 +172,35 @@ export default async function handler(req, res) {
       throw new Error("AI did not return valid JSON. Please try again.");
     }
 
-    const parsed = JSON.parse(jsonStr);
+    // Attempt parse; if it fails try to repair truncated JSON
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      // Response was cut off — try closing open structures
+      let repaired = jsonStr;
+      // Count unclosed brackets
+      let openBraces = 0, openBrackets = 0, inStr = false, escape = false;
+      for (const ch of repaired) {
+        if (escape) { escape = false; continue; }
+        if (ch === '\\' && inStr) { escape = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '{') openBraces++;
+        if (ch === '}') openBraces--;
+        if (ch === '[') openBrackets++;
+        if (ch === ']') openBrackets--;
+      }
+      // Close any open string, then arrays, then objects
+      if (inStr) repaired += '"';
+      repaired += ']'.repeat(Math.max(0, openBrackets));
+      repaired += '}'.repeat(Math.max(0, openBraces));
+      try {
+        parsed = JSON.parse(repaired);
+      } catch {
+        throw new Error("Analysis response was incomplete. Please try again.");
+      }
+    }
 
     if (!parsed.score || !parsed.sections) {
       throw new Error("Incomplete analysis returned. Please try again.");
