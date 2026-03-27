@@ -40,6 +40,7 @@ interface AnalysisResult {
 
 interface UsageStatus {
   allowed: boolean;
+  requiresEmail?: boolean;
   used: number;
   limit: number;
   paid: boolean;
@@ -625,6 +626,11 @@ export default function Home() {
   const paygLink = import.meta.env.VITE_STRIPE_PAYG_LINK || "#";
   const monthlyLink = import.meta.env.VITE_STRIPE_MONTHLY_LINK || "#";
 
+  // If server says email required, bounce back to landing
+  useEffect(() => {
+    if (usageStatus?.requiresEmail) setShowLanding(true);
+  }, [usageStatus]);
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
@@ -663,6 +669,11 @@ export default function Home() {
       const usageRes = await fetch(`${API_BASE}/api/usage`, { headers });
       const usage: UsageStatus = await usageRes.json();
       if (!usage.allowed) {
+        if (usage.requiresEmail) {
+          // No email on file — send them back to landing screen
+          setShowLanding(true);
+          return reject(new Error("PAYWALL"));
+        }
         setShowPaywall(true);
         return reject(new Error("PAYWALL"));
       }
