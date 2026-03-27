@@ -67,14 +67,7 @@ function LandingScreen({ onSignIn }: {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fingerprint: sessionStorage.getItem("rw_fp") || "" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send link");
-      setSent(true);
+      // Store email and go straight in — usage is tracked server-side by email
       sessionStorage.setItem("rw_email", email);
       onSignIn(email);
     } catch (err: unknown) {
@@ -109,8 +102,8 @@ function LandingScreen({ onSignIn }: {
         <div className="landing-card">
           {!sent ? (
             <>
-              <p className="landing-card-title">Sign in with your email to get started</p>
-              <p className="landing-card-sub">We'll send a magic link — no password needed. Works on any device.</p>
+              <p className="landing-card-title">Enter your email to get started</p>
+              <p className="landing-card-sub">No password needed. Your 3 free analyses are tied to your email — works on any device.</p>
               <div className="landing-input-row">
                 <input
                   className="landing-input"
@@ -129,7 +122,7 @@ function LandingScreen({ onSignIn }: {
                   data-testid="button-landing-signin"
                 >
                   {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
-                  {loading ? "Sending…" : "Get Free Access"}
+                  {loading ? "Starting…" : "Get Free Access →"}
                 </button>
               </div>
               {error && <p className="landing-error">{error}</p>}
