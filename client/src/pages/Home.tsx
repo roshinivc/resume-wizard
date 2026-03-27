@@ -467,13 +467,28 @@ export default function Home() {
           </div>
           <div className="header-right">
             {usageStatus && !usageStatus.isAdmin && !usageStatus.paid && (
-              <span className="usage-badge">
-                {Math.max(0, 3 - usageStatus.used)} free left
+              <>
+                <span className="usage-badge">
+                  {Math.max(0, 3 - usageStatus.used)} free left
+                </span>
+                <button className="header-subscribe-btn" onClick={() => setShowPaywall(true)}>
+                  <Crown size={12} /> Subscribe
+                </button>
+              </>
+            )}
+            {usageStatus?.paid && usageStatus.plan === "monthly" && (
+              <span className="usage-badge usage-badge--paid">
+                <Crown size={11} /> Monthly · {Math.max(0, 15 - usageStatus.used)} left
               </span>
             )}
-            {usageStatus?.paid && (
+            {usageStatus?.paid && usageStatus.plan === "payg" && (
               <span className="usage-badge usage-badge--paid">
-                <Crown size={11} /> {usageStatus.plan === "monthly" ? `${Math.max(0, 15 - usageStatus.used)} left` : "Paid"}
+                <ZapIcon size={11} /> Pay-as-you-go
+              </span>
+            )}
+            {usageStatus?.isAdmin && (
+              <span className="usage-badge usage-badge--admin">
+                Admin
               </span>
             )}
             <button className="theme-toggle" onClick={() => setDarkMode(d => !d)} aria-label="Toggle dark mode">
