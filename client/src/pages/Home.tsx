@@ -709,10 +709,10 @@ export default function Home() {
                   placeholder="Paste the full job description here…"
                   value={jobDesc} onChange={e => setJobDesc(e.target.value)}
                   className="big-textarea" disabled={loading} />
-                <span className={`char-count${jobDesc.length > 2800 ? " char-count--warn" : jobDesc.length > 3000 ? " char-count--over" : ""}`}>
-                  {jobDesc.length} / 3000 chars
-                  {jobDesc.length > 3000 && " — will be trimmed to 3000"}
-                  {jobDesc.length > 2800 && jobDesc.length <= 3000 && " — near limit"}
+                <span className={`char-count${jobDesc.length > 2300 ? " char-count--warn" : jobDesc.length > 2500 ? " char-count--over" : ""}`}>
+                  {jobDesc.length} / 2500 chars
+                  {jobDesc.length > 2500 && " — will be trimmed to 2500"}
+                  {jobDesc.length > 2300 && jobDesc.length <= 2500 && " — near limit"}
                 </span>
               </div>
             </div>

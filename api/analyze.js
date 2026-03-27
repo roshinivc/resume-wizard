@@ -89,8 +89,8 @@ The JSON must follow this exact structure:
     }
   ],
   "coverLetter": "Full 250-word cover letter starting with Dear Hiring Manager, tailored to this specific job description using actual experience from the resume.",
-  "hiringManagerNote": "A concise 8-10 line direct message to the hiring manager. Conversational, confident, not a cover letter. Opens with one specific thing about the company or role that genuinely excites the candidate based on the JD. Then connects 2-3 specific achievements from the resume directly to what the role needs. Closes with a clear ask for a conversation. No generic phrases like 'I am writing to express my interest'. Sounds like a real person, not a template.",
-  "whyBestCandidate": "5-6 lines separated by newline characters (\\n). Each line is one reason why this candidate is the best fit. Format each line as: Strength label: Evidence from resume — Why it matters for this specific role. No bullet symbols, no markdown, just plain text lines separated by \\n."
+  "hiringManagerNote": "8-10 line direct message to hiring manager. Conversational, confident. Opens with something specific about the role, connects 2-3 resume achievements to the role needs, ends with ask for conversation. No generic openers.",
+  "whyBestCandidate": "5-6 plain text lines separated by \\n. Each: Strength label: Evidence — Why it matters for this role."
 }
 
 Replace the example values with real analysis. Provide 3-4 corrections. Rating values must be exactly: strong, moderate, or weak.`;
@@ -147,11 +147,11 @@ export default async function handler(req, res) {
 
     const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
-      max_tokens: 3500,
+      max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 3000)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 3000)}`
+        content: `RESUME:\n${resumeText.slice(0, 2500)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2500)}`
       }]
     });
 
