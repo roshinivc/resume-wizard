@@ -4,25 +4,25 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Resume Wizard — AI Resume Analyzer</title>
-<meta name="description" content="Upload your resume, paste a job description. Get a match score out of 10, honest corrections, and a tailored cover letter in under 10 seconds."/>
+<meta name="description" content="Sign in with your email, get 3 free AI resume analyses. Paste a job description, upload your resume — get a match score, corrections, and cover letter in seconds."/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
   --bg:#f0f4f8; --white:#fff; --dark:#0a1628; --navy:#0d1f3c;
   --slate:#1e3a5f; --muted:#64748b; --muted2:#94a3b8; --border:#d1dde8;
   --s:#3b4fd8; --sl:#6070f0; --sbg:rgba(59,79,216,.07);
-  --green:#059669; --red:#dc2626; --amber:#d97706;
+  --green:#059669; --amber:#d97706;
   --mono:"IBM Plex Mono",monospace; --display:"Cambria","Georgia",serif; --body:"Cambria","Georgia",serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{background:var(--bg);color:var(--dark);font-family:var(--body);overflow-x:hidden;}
 .page-wrap{max-width:1200px;margin:0 auto;overflow:hidden;}
+a{color:inherit;}
 
 /* NAV */
 nav{position:sticky;top:0;z-index:100;background:rgba(240,244,248,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;height:50px;display:flex;align-items:center;gap:12px;}
 .nav-logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
-.nav-logo-icon{width:28px;height:28px;}
 .nav-logo-name{font-family:var(--display);font-size:15px;font-weight:800;color:var(--dark);}
 .nav-logo-name em{color:var(--s);font-style:normal;}
 .nav-links{display:flex;gap:2px;margin-left:24px;}
@@ -33,24 +33,40 @@ nav{position:sticky;top:0;z-index:100;background:rgba(240,244,248,.94);backdrop-
 .nav-launch:hover{background:var(--sl);transform:translateY(-1px);box-shadow:0 4px 14px rgba(59,79,216,.35);}
 
 /* HERO */
-.hero{background:var(--dark);padding:52px 24px 48px;text-align:center;position:relative;overflow:hidden;}
+.hero{background:var(--dark);padding:56px 24px 52px;text-align:center;position:relative;overflow:hidden;}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(59,79,216,.22),transparent),radial-gradient(ellipse 40% 30% at 85% 110%,rgba(96,112,240,.1),transparent);pointer-events:none;}
 .hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(59,79,216,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(59,79,216,.05) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
-.hero-inner{position:relative;z-index:1;max-width:580px;margin:0 auto;}
-.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;background:rgba(96,112,240,.1);border:1px solid rgba(96,112,240,.22);color:#a0b0ff;font-size:11px;font-weight:600;font-family:var(--mono);margin-bottom:26px;letter-spacing:.05em;}
+.hero-inner{position:relative;z-index:1;max-width:560px;margin:0 auto;}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;background:rgba(96,112,240,.1);border:1px solid rgba(96,112,240,.22);color:#a0b0ff;font-size:11px;font-weight:600;font-family:var(--mono);margin-bottom:24px;letter-spacing:.05em;}
 .hero-eyebrow::before{content:"●";color:#818cf8;font-size:8px;animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.hero h1{font-family:var(--display);font-size:clamp(22px,2.2vw,36px);font-weight:800;color:white;line-height:1.18;margin-bottom:16px;letter-spacing:-.018em;}
+.hero h1{font-family:var(--display);font-size:clamp(22px,2.2vw,36px);font-weight:800;color:white;line-height:1.18;margin-bottom:14px;letter-spacing:-.018em;}
 .hero h1 em{font-style:normal;background:linear-gradient(135deg,#a0b0ff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.hero-sub{font-size:13px;color:#94a3b8;line-height:1.65;margin-bottom:32px;font-weight:300;max-width:460px;margin-left:auto;margin-right:auto;}
-.hero-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:36px;}
-.hero-tag{padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:11px;font-weight:500;font-family:var(--mono);}
-.hero-cta{display:flex;gap:12px;justify-content:center;align-items:center;}
-.btn-launch{padding:11px 26px;background:linear-gradient(135deg,#3b4fd8,#6070f0);color:white;border:none;border-radius:8px;font-family:var(--display);font-size:13px;font-weight:700;cursor:pointer;transition:all .22s;letter-spacing:.01em;box-shadow:0 0 0 0 rgba(96,112,240,.4);text-decoration:none;display:inline-block;}
-.btn-launch:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(96,112,240,.45);}
-.btn-ghost{padding:10px 20px;background:transparent;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18);border-radius:8px;font-family:var(--body);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;}
-.btn-ghost:hover{border-color:rgba(255,255,255,.4);color:white;}
-.hero-note{margin-top:18px;font-size:11px;color:rgba(255,255,255,.25);font-family:var(--mono);}
+.hero-sub{font-size:13px;color:#94a3b8;line-height:1.65;margin-bottom:32px;font-weight:300;}
+
+/* EMAIL SIGNUP CARD */
+.signup-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px 28px 24px;max-width:440px;margin:0 auto 16px;}
+.signup-card-title{font-family:var(--display);font-size:15px;font-weight:700;color:white;margin-bottom:6px;}
+.signup-card-sub{font-size:11px;color:rgba(255,255,255,.45);font-family:var(--mono);margin-bottom:20px;line-height:1.6;}
+.signup-input-row{display:flex;gap:8px;}
+.signup-input{flex:1;padding:10px 14px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:white;font-size:13px;font-family:var(--body);outline:none;transition:border-color .2s;}
+.signup-input::placeholder{color:rgba(255,255,255,.3);}
+.signup-input:focus{border-color:rgba(96,112,240,.7);background:rgba(255,255,255,.1);}
+.signup-btn{padding:10px 20px;background:linear-gradient(135deg,#3b4fd8,#6070f0);color:white;border:none;border-radius:8px;font-family:var(--display);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.signup-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(96,112,240,.45);}
+.signup-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.signup-success{display:none;align-items:center;gap:10px;padding:12px 16px;background:rgba(5,150,105,.12);border:1px solid rgba(52,211,153,.25);border-radius:8px;color:#6ee7b7;font-size:12px;font-family:var(--mono);}
+.signup-success.visible{display:flex;}
+.signup-error{color:#f87171;font-size:11px;font-family:var(--mono);margin-top:7px;min-height:16px;}
+.signup-divider{display:flex;align-items:center;gap:12px;margin:16px 0 14px;}
+.signup-divider-line{flex:1;height:1px;background:rgba(255,255,255,.08);}
+.signup-divider-text{font-size:10px;color:rgba(255,255,255,.25);font-family:var(--mono);}
+.signup-skip{display:block;text-align:center;font-size:11px;color:rgba(255,255,255,.35);font-family:var(--mono);text-decoration:none;transition:color .15s;}
+.signup-skip:hover{color:rgba(255,255,255,.7);}
+
+/* FREE BADGE */
+.free-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;background:rgba(5,150,105,.1);border:1px solid rgba(52,211,153,.2);color:#6ee7b7;font-size:11px;font-family:var(--mono);margin-bottom:20px;}
+.free-badge strong{color:#34d399;}
 
 /* PROOF BAR */
 .proof-bar{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);padding:14px 24px;display:flex;justify-content:center;gap:36px;flex-wrap:wrap;}
@@ -68,6 +84,28 @@ section.alt{background:white;}
 .section-sub{font-size:12px;color:var(--muted);line-height:1.7;max-width:480px;}
 .section-head{margin-bottom:28px;}
 
+/* PRICING */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:640px){.pricing-grid{grid-template-columns:1fr;}}
+.plan{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:22px 20px;position:relative;transition:all .2s;}
+.plan:hover{border-color:var(--s);box-shadow:0 10px 32px rgba(59,79,216,.1);}
+.plan--featured{background:white;border-color:var(--s);box-shadow:0 8px 28px rgba(59,79,216,.12);}
+.plan-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--s);color:white;font-size:9px;font-weight:700;padding:3px 12px;border-radius:10px;font-family:var(--mono);letter-spacing:.05em;white-space:nowrap;}
+.plan-name{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;}
+.plan-price{font-family:var(--display);font-size:28px;font-weight:800;color:var(--dark);line-height:1;}
+.plan-price span{font-size:13px;font-weight:400;color:var(--muted);}
+.plan-desc{font-size:11px;color:var(--muted);margin:10px 0 14px;line-height:1.6;}
+.plan-features{list-style:none;display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.plan-features li{font-size:11px;color:var(--muted);display:flex;align-items:flex-start;gap:7px;line-height:1.5;}
+.plan-features li::before{content:"✓";color:var(--green);font-weight:700;flex-shrink:0;}
+.plan-features li.locked::before{content:"🔒";font-size:10px;}
+.plan-features li.locked{color:var(--muted2);}
+.plan-cta{display:block;width:100%;padding:9px;text-align:center;border-radius:8px;font-family:var(--display);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;border:none;}
+.plan-cta--ghost{background:transparent;border:1.5px solid var(--border);color:var(--dark);}
+.plan-cta--ghost:hover{border-color:var(--s);color:var(--s);}
+.plan-cta--primary{background:linear-gradient(135deg,#3b4fd8,#6070f0);color:white;border:none;}
+.plan-cta--primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(96,112,240,.4);}
+
 /* FEATURES */
 .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
 @media(max-width:600px){.features-grid{grid-template-columns:1fr;}}
@@ -77,6 +115,7 @@ section.alt{background:white;}
 .fc-title{font-family:var(--display);font-size:13px;font-weight:700;color:var(--dark);margin-bottom:6px;}
 .fc-desc{font-size:11px;color:var(--muted);line-height:1.65;}
 .fc-tag{display:inline-block;margin-top:11px;font-size:9px;font-weight:700;padding:2px 9px;border-radius:10px;font-family:var(--mono);background:var(--sbg);color:var(--s);border:1px solid rgba(59,79,216,.15);}
+.fc-lock{display:inline-block;margin-top:11px;font-size:9px;font-weight:700;padding:2px 9px;border-radius:10px;font-family:var(--mono);background:rgba(100,116,139,.08);color:var(--muted2);border:1px solid rgba(100,116,139,.18);}
 
 /* HOW IT WORKS */
 .steps{display:grid;grid-template-columns:repeat(3,1fr);position:relative;gap:0;}
@@ -84,11 +123,11 @@ section.alt{background:white;}
 @media(max-width:600px){.steps{grid-template-columns:1fr;}.steps::before{display:none;}}
 .step{padding:0 16px;text-align:center;}
 .step-num{width:44px;height:44px;border-radius:50%;background:white;border:2px solid var(--border);color:var(--s);font-size:16px;font-weight:800;font-family:var(--display);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;position:relative;z-index:1;transition:all .2s;}
-.step:hover .step-num{border-color:var(--s);background:var(--sbg);box-shadow:0 0 0 6px rgba(59,79,216,.07);}
+.step:hover .step-num{border-color:var(--s);background:var(--sbg);}
 .step-title{font-family:var(--display);font-size:12px;font-weight:700;color:var(--dark);margin-bottom:5px;}
 .step-desc{font-size:11px;color:var(--muted);line-height:1.6;}
 
-/* APP PREVIEW MOCKUP */
+/* APP PREVIEW */
 .preview-wrap{background:var(--dark);border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.07);}
 .preview-bar{background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07);padding:13px 18px;display:flex;align-items:center;gap:7px;}
 .pb-dot{width:11px;height:11px;border-radius:50%;}
@@ -97,17 +136,13 @@ section.alt{background:white;}
 .pb-launch:hover{opacity:.9;transform:scale(1.03);}
 .preview-body{padding:20px;display:grid;grid-template-columns:auto 1fr;gap:20px;}
 @media(max-width:640px){.preview-body{grid-template-columns:1fr;}}
-
-/* Score ring mock */
 .mock-score{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
 .mock-score-label{font-size:9px;color:rgba(255,255,255,.3);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;}
-
-/* Feedback items */
 .mock-right{flex:1;display:flex;flex-direction:column;gap:8px;}
-.mock-hero-row{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.mock-hero-row{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px 14px;}
 .mock-score-text strong{font-family:var(--display);font-size:14px;font-weight:700;color:white;display:block;margin-bottom:3px;}
 .mock-score-text span{font-size:10px;color:rgba(255,255,255,.4);}
-.mock-row{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;font-family:var(--body);}
+.mock-row{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;}
 .mock-row-left{display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(255,255,255,.6);}
 .mock-icon{width:26px;height:26px;background:rgba(96,112,240,.15);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;}
 .badge{font-size:9px;font-weight:700;padding:2px 9px;border-radius:10px;font-family:var(--mono);}
@@ -119,16 +154,13 @@ section.alt{background:white;}
 .mock-before{font-size:10px;color:rgba(255,255,255,.3);text-decoration:line-through;margin-bottom:5px;font-family:var(--mono);}
 .mock-after{font-size:10px;color:#6ee7b7;font-family:var(--mono);padding:5px 8px;background:rgba(52,211,153,.06);border-radius:4px;border:1px solid rgba(52,211,153,.15);}
 
-/* CTA */
+/* CTA BOTTOM */
 .cta-section{background:var(--dark);text-align:center;padding:52px 24px;position:relative;overflow:hidden;}
 .cta-section::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 50% 50%,rgba(59,79,216,.15),transparent);pointer-events:none;}
 .cta-inner{position:relative;z-index:1;}
 .cta-section h2{font-family:var(--display);font-size:clamp(18px,1.8vw,28px);font-weight:800;color:white;margin-bottom:10px;letter-spacing:-.018em;}
 .cta-section h2 em{font-style:normal;color:#a0b0ff;}
 .cta-section p{font-size:12px;color:#94a3b8;margin-bottom:22px;line-height:1.65;}
-.cta-checks{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:28px;}
-.cta-check{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.55);font-family:var(--mono);}
-.cta-check::before{content:"✓";color:#6ee7b7;font-weight:700;}
 
 /* FOOTER */
 footer{background:var(--dark);border-top:1px solid rgba(255,255,255,.06);padding:24px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
@@ -137,9 +169,6 @@ footer{background:var(--dark);border-top:1px solid rgba(255,255,255,.06);padding
 .footer-links{display:flex;gap:20px;}
 .footer-link{font-size:11px;color:rgba(255,255,255,.25);font-family:var(--mono);text-decoration:none;transition:color .15s;}
 .footer-link:hover{color:rgba(255,255,255,.6);}
-.footer-note{font-size:11px;color:rgba(255,255,255,.15);font-family:var(--mono);}
-
-a{color:inherit;}
 </style>
 </head>
 <body>
@@ -147,16 +176,16 @@ a{color:inherit;}
 <!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">
-    <img src="logo.png" alt="Resume Wizard" style="width:40px;height:40px;object-fit:contain;">
+    <img src="logo.png" alt="Resume Wizard" style="width:34px;height:34px;object-fit:contain;">
     <span class="nav-logo-name">Resume<em>Wizard</em></span>
   </a>
   <div class="nav-links">
     <a class="nav-link" href="#features">Features</a>
+    <a class="nav-link" href="#pricing">Pricing</a>
     <a class="nav-link" href="#how">How It Works</a>
-    <a class="nav-link" href="https://github.com/roshinivc/resume-wizard" target="_blank">GitHub</a>
   </div>
   <div class="nav-right">
-    <a class="nav-launch" href="https://resume-wizard-opal.vercel.app" target="_blank">Launch App →</a>
+    <a class="nav-launch" href="https://resume-wizard-opal.vercel.app" target="_blank">Open App →</a>
   </div>
 </nav>
 
@@ -166,29 +195,44 @@ a{color:inherit;}
 <section class="hero">
   <div class="hero-inner">
     <div class="hero-eyebrow">ResumeWizard · AI-Powered Resume Analyzer</div>
-    <h1>Stop guessing.<br/>Know your <em>exact match score.</em></h1>
-    <p class="hero-sub">Upload your resume and any job description. Get a score out of 10, specific before/after corrections, and a tailored cover letter — in under 10 seconds.</p>
-    <div class="hero-tags">
-      <span class="hero-tag">🎯 Match Score</span>
-      <span class="hero-tag">📊 6-Category Feedback</span>
-      <span class="hero-tag">✏️ Resume Corrections</span>
-      <span class="hero-tag">📄 Cover Letter</span>
+    <h1>Know your <em>exact match score</em><br/>before you hit apply.</h1>
+    <p class="hero-sub">Upload your resume, paste a job description. Get a score out of 10, honest corrections, and a tailored cover letter — in seconds.</p>
+
+    <!-- Email signup card -->
+    <div class="signup-card">
+      <div class="signup-card-title">Start with 3 free analyses</div>
+      <div class="signup-card-sub">Sign in with your email — no password, no setup. Use it on any device.</div>
+      <div id="signup-form">
+        <div class="signup-input-row">
+          <input class="signup-input" id="email-input" type="email" placeholder="you@email.com" autocomplete="email"/>
+          <button class="signup-btn" id="signup-btn" onclick="handleSignup()">Get Free Access →</button>
+        </div>
+        <div class="signup-error" id="signup-error"></div>
+      </div>
+      <div class="signup-success" id="signup-success">
+        <span>✓</span>
+        <span>Magic link sent! Check your inbox — click the link to start analyzing.</span>
+      </div>
+      <div class="signup-divider">
+        <div class="signup-divider-line"></div>
+        <div class="signup-divider-text">or</div>
+        <div class="signup-divider-line"></div>
+      </div>
+      <a class="signup-skip" href="https://resume-wizard-opal.vercel.app" target="_blank">Skip sign-in and try without saving progress →</a>
     </div>
-    <div class="hero-cta">
-      <a class="btn-launch" href="https://resume-wizard-opal.vercel.app" target="_blank">Launch ResumeWizard →</a>
-      <a class="btn-ghost" href="#how">See How It Works</a>
+
+    <div class="free-badge">
+      <strong>3 free</strong> analyses included · No credit card required
     </div>
-    <div class="hero-note">No signup required · No resume stored · 100% free</div>
   </div>
 </section>
 
 <!-- PROOF BAR -->
 <div class="proof-bar">
   <div class="proof-item"><div class="proof-val">10<span> point</span></div><div class="proof-lbl">Match Score</div></div>
-  <div class="proof-item"><div class="proof-val">6<span> categories</span></div><div class="proof-lbl">Feedback Breakdown</div></div>
-  <div class="proof-item"><div class="proof-val">4–6<span></span></div><div class="proof-lbl">Targeted Corrections</div></div>
-  <div class="proof-item"><div class="proof-val">&lt;10s<span></span></div><div class="proof-lbl">Analysis Speed</div></div>
-  <div class="proof-item"><div class="proof-val">0<span> logins</span></div><div class="proof-lbl">No Account Needed</div></div>
+  <div class="proof-item"><div class="proof-val">6<span> categories</span></div><div class="proof-lbl">Feedback Areas</div></div>
+  <div class="proof-item"><div class="proof-val">3<span> free</span></div><div class="proof-lbl">Analyses Included</div></div>
+  <div class="proof-item"><div class="proof-val">&lt;15s<span></span></div><div class="proof-lbl">Analysis Speed</div></div>
 </div>
 
 <!-- APP PREVIEW -->
@@ -197,7 +241,7 @@ a{color:inherit;}
     <div class="section-head" style="text-align:center;max-width:100%;">
       <div class="section-label" style="justify-content:center;display:flex;">The App</div>
       <div class="section-title" style="text-align:center;">A complete resume analysis — not just a score</div>
-      <div class="section-sub" style="margin:0 auto 28px;text-align:center;">Three tabs: detailed feedback, before/after corrections, and a ready-to-send cover letter.</div>
+      <div class="section-sub" style="margin:0 auto 28px;text-align:center;">Score, 6-category feedback, before/after corrections, cover letter, manager note, and why you're the best fit.</div>
     </div>
     <div class="preview-wrap">
       <div class="preview-bar">
@@ -205,10 +249,9 @@ a{color:inherit;}
         <div class="pb-dot" style="background:#ffbd2e"></div>
         <div class="pb-dot" style="background:#27c840"></div>
         <span class="pb-title">resumewizard · analysis · feedback</span>
-        <a class="pb-launch" href="https://resume-wizard-opal.vercel.app" target="_blank">Open Full App →</a>
+        <a class="pb-launch" href="https://resume-wizard-opal.vercel.app" target="_blank">Open App →</a>
       </div>
       <div class="preview-body">
-        <!-- Score ring SVG -->
         <div class="mock-score">
           <svg viewBox="0 0 100 100" width="90" height="90">
             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="8"/>
@@ -219,7 +262,6 @@ a{color:inherit;}
           </svg>
           <div class="mock-score-label">Match Score</div>
         </div>
-        <!-- Right side -->
         <div class="mock-right">
           <div class="mock-hero-row">
             <div class="mock-score-text">
@@ -240,9 +282,9 @@ a{color:inherit;}
             <span class="badge badge-w">Needs Work</span>
           </div>
           <div class="mock-correction">
-            <div class="mock-corr-label">✏️ Resume Correction #1 — Work Experience</div>
+            <div class="mock-corr-label">✏️ Resume Correction — Work Experience</div>
             <div class="mock-before">"Led team projects and delivered results on time"</div>
-            <div class="mock-after">✓ "Led cross-functional team of 6, delivering 3 product releases — cutting deployment time by 40%"</div>
+            <div class="mock-after">✓ "Led cross-functional team of 6, delivering 3 product releases on schedule"</div>
           </div>
         </div>
       </div>
@@ -254,79 +296,134 @@ a{color:inherit;}
 <section id="features" class="alt">
   <div class="container">
     <div class="section-head">
-      <div class="section-label">Features</div>
-      <div class="section-title">Everything you need to land the interview</div>
-      <div class="section-sub">Honest, specific feedback — not generic tips. Every suggestion is grounded in what's already on your resume.</div>
+      <div class="section-label">What You Get</div>
+      <div class="section-title">Free vs. paid — here's the difference</div>
+      <div class="section-sub">Your 3 free analyses include score and feedback. Upgrades unlock the full toolkit.</div>
     </div>
     <div class="features-grid">
       <div class="fc">
         <div class="fc-icon">🎯</div>
         <div class="fc-title">Match Score (out of 10)</div>
-        <div class="fc-desc">See exactly how well your resume aligns with the job description, with a plain-English rationale explaining the score.</div>
-        <span class="fc-tag">Instant</span>
+        <div class="fc-desc">See exactly how well your resume aligns with the job description, with a plain-English rationale.</div>
+        <span class="fc-tag">Free</span>
       </div>
       <div class="fc">
         <div class="fc-icon">📊</div>
         <div class="fc-title">6-Category Feedback</div>
-        <div class="fc-desc">Keyword Match, Work Experience, Skills Alignment, Impact & Metrics, Formatting, and Quick Wins — each rated Strong / Moderate / Needs Work.</div>
-        <span class="fc-tag">Actionable</span>
+        <div class="fc-desc">Keyword Match, Work Experience, Skills, Impact, Formatting, and Quick Wins — each rated Strong / Moderate / Needs Work.</div>
+        <span class="fc-tag">Free</span>
       </div>
       <div class="fc">
         <div class="fc-icon">✏️</div>
-        <div class="fc-title">Honest Resume Corrections</div>
-        <div class="fc-desc">Side-by-side before/after rewrites based only on what's already on your resume. Nothing fabricated — every edit is grounded in your real experience.</div>
-        <span class="fc-tag">Truth-grounded</span>
+        <div class="fc-title">Resume Corrections</div>
+        <div class="fc-desc">Side-by-side before/after rewrites grounded only in what's already on your resume. Nothing fabricated.</div>
+        <span class="fc-lock">Paid</span>
       </div>
       <div class="fc">
         <div class="fc-icon">📄</div>
-        <div class="fc-title">Tailored Cover Letter</div>
-        <div class="fc-desc">A ~300 word cover letter that references your actual experience and speaks directly to this specific role. Copy or download as a text file instantly.</div>
-        <span class="fc-tag">Ready to send</span>
+        <div class="fc-title">Cover Letter + Manager Note</div>
+        <div class="fc-desc">A tailored cover letter and a direct message to the hiring manager — specific to this role, ready to copy.</div>
+        <span class="fc-lock">Paid</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-head" style="text-align:center;max-width:100%;">
+      <div class="section-label" style="display:flex;justify-content:center;">Pricing</div>
+      <div class="section-title" style="text-align:center;">Simple, transparent pricing</div>
+      <div class="section-sub" style="margin:0 auto;text-align:center;">Start free. Pay only when you need more.</div>
+    </div>
+    <div class="pricing-grid" style="margin-top:32px;">
+
+      <!-- Free -->
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0</div>
+        <div class="plan-desc">Sign in with email and try it out — no credit card ever.</div>
+        <ul class="plan-features">
+          <li>3 analyses included</li>
+          <li>Match score out of 10</li>
+          <li>6-category feedback</li>
+          <li class="locked">Resume corrections</li>
+          <li class="locked">Cover letter</li>
+          <li class="locked">Manager note &amp; Why I'm the best fit</li>
+        </ul>
+        <a class="plan-cta plan-cta--ghost" href="https://resume-wizard-opal.vercel.app" target="_blank">Start Free →</a>
+      </div>
+
+      <!-- Pay as you go -->
+      <div class="plan plan--featured">
+        <div class="plan-badge">Most Flexible</div>
+        <div class="plan-name">Pay As You Go</div>
+        <div class="plan-price">$0.99<span> / analysis</span></div>
+        <div class="plan-desc">Buy one analysis at a time. No subscription, no commitment.</div>
+        <ul class="plan-features">
+          <li>1 full analysis</li>
+          <li>All 5 result tabs</li>
+          <li>Resume corrections</li>
+          <li>Cover letter</li>
+          <li>Manager note &amp; best fit</li>
+        </ul>
+        <a class="plan-cta plan-cta--primary" href="https://resume-wizard-opal.vercel.app" target="_blank">Buy One Analysis →</a>
+      </div>
+
+      <!-- Monthly -->
+      <div class="plan">
+        <div class="plan-name">Monthly</div>
+        <div class="plan-price">$5.99<span> / month</span></div>
+        <div class="plan-desc">Best if you're actively applying. Cancel or pause anytime.</div>
+        <ul class="plan-features">
+          <li>15 analyses per month</li>
+          <li>All 5 result tabs</li>
+          <li>Resume corrections</li>
+          <li>Cover letter</li>
+          <li>Cancel or pause anytime</li>
+        </ul>
+        <a class="plan-cta plan-cta--ghost" href="https://resume-wizard-opal.vercel.app" target="_blank">Subscribe →</a>
+      </div>
+
     </div>
   </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section id="how">
+<section id="how" class="alt">
   <div class="container">
     <div class="section-head">
       <div class="section-label">How It Works</div>
-      <div class="section-title">Three steps, under 10 seconds</div>
-      <div class="section-sub">No account, no setup. Just your resume and the job posting.</div>
+      <div class="section-title">Three steps, under 15 seconds</div>
+      <div class="section-sub">Sign in once, use on any device. Your usage follows your email.</div>
     </div>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <div class="step-title">Upload Your Resume</div>
-        <div class="step-desc">Drop in a PDF, DOCX, or TXT file. Your resume is read and parsed — nothing is stored after the analysis.</div>
+        <div class="step-title">Sign In with Email</div>
+        <div class="step-desc">Enter your email — we send a magic link. No password. Works on any device, any browser.</div>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <div class="step-title">Paste the Job Description</div>
-        <div class="step-desc">Copy the full job posting from LinkedIn or any company site. The more detail, the better the analysis.</div>
+        <div class="step-title">Upload Resume + Job Description</div>
+        <div class="step-desc">Drop in a PDF, DOCX, or TXT. Paste the job posting. Your resume is never stored.</div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-title">Get Your Full Analysis</div>
-        <div class="step-desc">A match score, 6-category breakdown, specific corrections, and a tailored cover letter — delivered in one shot.</div>
+        <div class="step-desc">Score, 6-category feedback, corrections, cover letter — all in one shot. 3 analyses free.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
+<!-- BOTTOM CTA -->
 <section class="cta-section">
   <div class="cta-inner">
-    <h2>Ready to know your <em>exact score?</em></h2>
-    <p>Upload your resume and a job description.<br/>Your full analysis will be ready in under 10 seconds.</p>
-    <div class="cta-checks">
-      <div class="cta-check">No account required</div>
-      <div class="cta-check">No resume stored</div>
-      <div class="cta-check">PDF, DOCX, or TXT</div>
-      <div class="cta-check">100% free</div>
-    </div>
-    <a class="btn-launch" href="https://resume-wizard-opal.vercel.app" target="_blank" style="font-size:14px;padding:13px 32px;">Launch ResumeWizard →</a>
+    <h2>Start with <em>3 free analyses.</em></h2>
+    <p>Sign in with your email. No password, no credit card, no setup.<br/>Works on any device — your free analyses follow your email.</p>
+    <a class="signup-btn" href="https://resume-wizard-opal.vercel.app" target="_blank" style="display:inline-block;padding:13px 32px;font-size:13px;border-radius:8px;text-decoration:none;">Open ResumeWizard →</a>
   </div>
 </section>
 
@@ -336,16 +433,52 @@ a{color:inherit;}
 <footer>
   <div class="footer-brand">Resume<em>Wizard</em></div>
   <div class="footer-links">
-    <a class="footer-link" href="https://github.com/roshinivc/resume-wizard" target="_blank">GitHub</a>
     <a class="footer-link" href="https://resume-wizard-opal.vercel.app" target="_blank">Live App</a>
     <a class="footer-link" href="https://www.linkedin.com/in/roshiniv/" target="_blank">LinkedIn</a>
+    <a class="footer-link" href="privacy.html">Privacy Policy</a>
+    <a class="footer-link" href="terms.html">Terms of Service</a>
   </div>
-  <div class="footer-note" style="display:flex;gap:16px;flex-wrap:wrap;">
-    <a href="privacy.html" style="color:rgba(255,255,255,.3);text-decoration:none;font-size:11px;font-family:var(--mono);">Privacy Policy</a>
-    <a href="terms.html" style="color:rgba(255,255,255,.3);text-decoration:none;font-size:11px;font-family:var(--mono);">Terms of Service</a>
-    <span style="color:rgba(255,255,255,.15);font-size:11px;font-family:var(--mono);">Built with Perplexity Computer</span>
-  </div>
+  <div style="font-size:11px;color:rgba(255,255,255,.15);font-family:var(--mono);">Built with Perplexity Computer</div>
 </footer>
+
+<script>
+async function handleSignup() {
+  const emailEl = document.getElementById('email-input');
+  const btn = document.getElementById('signup-btn');
+  const errorEl = document.getElementById('signup-error');
+  const successEl = document.getElementById('signup-success');
+  const formEl = document.getElementById('signup-form');
+  const email = emailEl.value.trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  errorEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    const res = await fetch('https://resume-wizard-opal.vercel.app/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, fingerprint: '' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to send link');
+    formEl.style.display = 'none';
+    successEl.classList.add('visible');
+  } catch (err) {
+    errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+    btn.disabled = false;
+    btn.textContent = 'Get Free Access →';
+  }
+}
+
+document.getElementById('email-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleSignup();
+});
+</script>
 
 </body>
 </html>
