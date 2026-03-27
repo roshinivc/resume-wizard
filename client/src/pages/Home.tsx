@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Briefcase, Zap, TrendingUp, Layout, Star, Search,
   ChevronDown, ChevronUp, Loader2, Moon, Sun, RotateCcw,
-  UploadCloud, X, CheckCircle2, ArrowRight, Copy, Check, Download, Lock, Zap as ZapIcon, Crown
+  UploadCloud, X, CheckCircle2, ArrowRight, Copy, Check, Download,
+  Lock, Zap as ZapIcon, Crown, Mail, LogOut
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -44,18 +45,111 @@ interface UsageStatus {
   paid: boolean;
   plan: string;
   isAdmin: boolean;
+  email: string | null;
+}
+
+// ─── Login Modal ──────────────────────────────────────────────────────────────
+
+function LoginModal({ onClose, onSuccess }: {
+  onClose: () => void;
+  onSuccess: (email: string) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const fingerprint = (() => {
+    let fp = sessionStorage.getItem("rw_fp");
+    if (!fp) { fp = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("rw_fp", fp); }
+    return fp;
+  })();
+
+  async function handleSend() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, fingerprint }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send link");
+      setSent(true);
+      // Optimistically store email so they don't have to wait for the link
+      sessionStorage.setItem("rw_email", email);
+      onSuccess(email);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="login-modal-backdrop" onClick={onClose}>
+      <div className="login-modal" onClick={e => e.stopPropagation()}>
+        <button className="login-modal-close" onClick={onClose} aria-label="Close"><X size={16} /></button>
+        <div className="login-modal-icon"><Mail size={28} /></div>
+        <h2 className="login-modal-title">Sign in with Email</h2>
+        {!sent ? (
+          <>
+            <p className="login-modal-sub">
+              Already paid? Enter your email and we'll send a magic link to restore your access on any device.
+            </p>
+            <input
+              className="login-modal-input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSend()}
+              autoFocus
+              data-testid="input-login-email"
+            />
+            {error && <p className="login-modal-error">{error}</p>}
+            <button
+              className="paywall-btn paywall-btn--primary login-modal-btn"
+              onClick={handleSend}
+              disabled={loading}
+              data-testid="button-send-magic-link"
+            >
+              {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
+              {loading ? "Sending…" : "Send Magic Link"}
+            </button>
+            <p className="login-modal-note">No password needed · Free to sign in · Access from any device</p>
+          </>
+        ) : (
+          <>
+            <div className="login-sent-icon"><CheckCircle2 size={40} className="login-check" /></div>
+            <p className="login-modal-sub login-modal-sub--success">
+              Magic link sent to <strong>{email}</strong>.<br />
+              Check your inbox and click the link to verify. Your access will be restored on this device too.
+            </p>
+            <button className="paywall-btn login-modal-btn" onClick={onClose}>
+              Done
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Paywall ──────────────────────────────────────────────────────────────────
 
-function PaywallScreen({ used, paygLink, monthlyLink, fingerprint }: {
+function PaywallScreen({ used, paygLink, monthlyLink, fingerprint, onSignIn }: {
   used: number;
   paygLink: string;
   monthlyLink: string;
   fingerprint: string;
+  onSignIn: () => void;
 }) {
   function goToPay(link: string, plan: string) {
-    // Pass fingerprint as URL param so webhook can identify user
     const url = new URL(link);
     url.searchParams.set("client_reference_id", fingerprint);
     url.searchParams.set("metadata[fingerprint]", fingerprint);
@@ -96,6 +190,9 @@ function PaywallScreen({ used, paygLink, monthlyLink, fingerprint }: {
             </button>
           </div>
         </div>
+        <button className="paywall-signin-link" onClick={onSignIn}>
+          <Mail size={13} /> Already paid? Sign in with email
+        </button>
         <p className="paywall-note">No account required · Secure payment via Stripe · Cancel anytime</p>
       </div>
     </div>
@@ -314,6 +411,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [darkMode, setDarkMode] = useState(window.matchMedia("(prefers-color-scheme: dark)").matches);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -327,6 +426,44 @@ export default function Home() {
     }
   }, []);
 
+  // Restore email from sessionStorage on load
+  useEffect(() => {
+    const savedEmail = sessionStorage.getItem("rw_email");
+    if (savedEmail) setLoggedInEmail(savedEmail);
+  }, []);
+
+  // Handle magic link callback — Supabase puts tokens in URL hash
+  // After clicking the email link, user lands on /?fp=...#access_token=...
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.replace("#", "?"));
+      const accessToken = params.get("access_token");
+      const urlParams = new URLSearchParams(window.location.search);
+      const fp = urlParams.get("fp");
+
+      if (accessToken) {
+        // Verify access token via our own API (avoids exposing Supabase keys on frontend)
+        fetch(`${API_BASE}/api/auth?action=verify&token=${encodeURIComponent(accessToken)}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data?.email) {
+              const email = data.email;
+              sessionStorage.setItem("rw_email", email);
+              // Restore old fingerprint if passed via URL
+              if (fp) sessionStorage.setItem("rw_fp", fp);
+              setLoggedInEmail(email);
+              toast({ title: "Signed in!", description: `Welcome back, ${email}` });
+              refetchUsage();
+            }
+          })
+          .catch(console.error);
+        // Clean URL
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, []);
+
   // Fingerprint for usage tracking
   const fingerprint = (() => {
     let fp = sessionStorage.getItem("rw_fp");
@@ -337,14 +474,18 @@ export default function Home() {
     return fp;
   })();
 
-  // Check usage status
+  // Check usage status — passes email header if logged in
   const { data: usageStatus, refetch: refetchUsage } = useQuery<UsageStatus>({
-    queryKey: ["/api/usage"],
+    queryKey: ["/api/usage", loggedInEmail],
     queryFn: async () => {
       const adminToken = sessionStorage.getItem("rw_admin") || "";
-      const res = await fetch(`${API_BASE}/api/usage`, {
-        headers: { "x-admin-token": adminToken, "x-fp": fingerprint },
-      });
+      const email = sessionStorage.getItem("rw_email") || "";
+      const headers: Record<string, string> = {
+        "x-admin-token": adminToken,
+        "x-fp": fingerprint,
+      };
+      if (email) headers["x-email"] = email;
+      const res = await fetch(`${API_BASE}/api/usage`, { headers });
       return res.json();
     },
     staleTime: 30000,
@@ -358,13 +499,31 @@ export default function Home() {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // When user signs in via login modal, refetch usage to pick up paid status
+  function handleLoginSuccess(email: string) {
+    setLoggedInEmail(email);
+    sessionStorage.setItem("rw_email", email);
+    // Refetch after a short delay (give the magic link time to be clicked)
+    setTimeout(() => refetchUsage(), 500);
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem("rw_email");
+    setLoggedInEmail(null);
+    refetchUsage();
+  }
+
   const submitMutation = useMutation({
     mutationFn: (): Promise<AnalysisResult> => new Promise(async (resolve, reject) => {
-      // Check usage before running
       const adminToken = sessionStorage.getItem("rw_admin") || "";
-      const usageRes = await fetch(`${API_BASE}/api/usage`, {
-        headers: { "x-admin-token": adminToken, "x-fp": fingerprint },
-      });
+      const email = sessionStorage.getItem("rw_email") || "";
+      const headers: Record<string, string> = {
+        "x-admin-token": adminToken,
+        "x-fp": fingerprint,
+      };
+      if (email) headers["x-email"] = email;
+
+      const usageRes = await fetch(`${API_BASE}/api/usage`, { headers });
       const usage: UsageStatus = await usageRes.json();
       if (!usage.allowed) {
         setShowPaywall(true);
@@ -406,7 +565,6 @@ export default function Home() {
           const data = JSON.parse(dataLine.replace("data:", "").trim());
           if (eventName === "result") return resolve(data as AnalysisResult);
           if (eventName === "error") return reject(new Error(data.error));
-          // token / ping — ignore, keep reading
         }
       }
       reject(new Error("No result received. Please try again."));
@@ -414,12 +572,18 @@ export default function Home() {
     onSuccess: (data) => {
       setResult(data);
       setActiveTab("feedback");
-      // Increment usage count
       const adminToken = sessionStorage.getItem("rw_admin") || "";
+      const email = sessionStorage.getItem("rw_email") || "";
+      const headers: Record<string, string> = {
+        "x-admin-token": adminToken,
+        "x-fp": fingerprint,
+        "Content-Type": "application/json",
+      };
+      if (email) headers["x-email"] = email;
       fetch(`${API_BASE}/api/usage`, {
         method: "POST",
-        headers: { "x-admin-token": adminToken, "x-fp": fingerprint, "Content-Type": "application/json" },
-        body: JSON.stringify({ fingerprint }),
+        headers,
+        body: JSON.stringify({ fingerprint, email }),
       }).then(() => refetchUsage());
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     },
@@ -443,7 +607,20 @@ export default function Home() {
 
   return (
     <div className="page-root">
-      {showPaywall && (
+      {/* Login Modal */}
+      {showLogin && (
+        <LoginModal
+          onClose={() => setShowLogin(false)}
+          onSuccess={(email) => {
+            handleLoginSuccess(email);
+            setShowLogin(false);
+            if (showPaywall) setShowPaywall(false);
+          }}
+        />
+      )}
+
+      {/* Paywall */}
+      {showPaywall && !showLogin && (
         <div className="paywall-backdrop" onClick={() => setShowPaywall(false)}>
           <div onClick={e => e.stopPropagation()}>
             <PaywallScreen
@@ -451,10 +628,12 @@ export default function Home() {
               paygLink={paygLink}
               monthlyLink={monthlyLink}
               fingerprint={fingerprint}
+              onSignIn={() => setShowLogin(true)}
             />
           </div>
         </div>
       )}
+
       {/* Header */}
       <header className="site-header">
         <div className="header-inner">
@@ -466,6 +645,17 @@ export default function Home() {
             </div>
           </div>
           <div className="header-right">
+            {/* Logged-in user display */}
+            {loggedInEmail && (
+              <div className="header-user">
+                <span className="header-user-email"><Mail size={11} /> {loggedInEmail}</span>
+                <button className="header-logout-btn" onClick={handleLogout} title="Sign out" data-testid="button-logout">
+                  <LogOut size={13} />
+                </button>
+              </div>
+            )}
+
+            {/* Usage / plan badges */}
             {usageStatus && !usageStatus.isAdmin && !usageStatus.paid && (
               <>
                 <span className="usage-badge">
@@ -474,6 +664,11 @@ export default function Home() {
                 <button className="header-subscribe-btn" onClick={() => setShowPaywall(true)}>
                   <Crown size={12} /> Subscribe
                 </button>
+                {!loggedInEmail && (
+                  <button className="header-signin-btn" onClick={() => setShowLogin(true)} data-testid="button-header-signin">
+                    <Mail size={12} /> Sign in
+                  </button>
+                )}
               </>
             )}
             {usageStatus?.paid && usageStatus.plan === "monthly" && (
