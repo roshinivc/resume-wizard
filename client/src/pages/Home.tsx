@@ -488,7 +488,7 @@ export default function Home() {
       const res = await fetch(`${API_BASE}/api/usage`, { headers });
       return res.json();
     },
-    staleTime: 30000,
+    staleTime: 0,
   });
 
   const isPaid = usageStatus?.paid || usageStatus?.isAdmin || false;
@@ -580,8 +580,8 @@ export default function Home() {
     onSuccess: (data) => {
       setResult(data);
       setActiveTab("feedback");
-      // Usage already incremented server-side in analyze.js — just refresh the display
-      refetchUsage();
+      // Delay refetch slightly so Supabase write has time to commit
+      setTimeout(() => refetchUsage(), 800);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     },
     onError: (err: Error) => {
