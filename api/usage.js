@@ -1,5 +1,4 @@
-// Usage tracking API — check and increment usage count
-// Supports both fingerprint (default) and email-based (logged-in users) lookup
+// Usage tracking API — email-based, cross-device
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -9,47 +8,41 @@ const supabase = createClient(
 
 const FREE_LIMIT = 3;
 
-// Get a fingerprint from request headers (client sends x-fp)
 function getFingerprint(req) {
-  // Client sends a session fingerprint via header
   const clientFp = req.headers["x-fp"];
   if (clientFp && clientFp.length > 4) return clientFp;
-
-  // Fallback: IP + UA hash
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
-    || req.headers["x-real-ip"]
-    || req.socket?.remoteAddress
-    || "unknown";
+    || req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
   const ua = req.headers["user-agent"] || "unknown";
   let hash = 0;
   const str = ip + ua;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
+  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
   return Math.abs(hash).toString(36);
 }
 
-async function getUsageByEmail(email) {
-  const { data, error } = await supabase
-    .from("usage")
-    .select("fingerprint, count, paid, plan, email")
-    .eq("email", email)
-    .order("last_used", { ascending: false })
-    .limit(1)
-    .single();
-  if (error && error.code !== "PGRST116") return null;
-  return data;
-}
+// Get or create a usage record — always keyed by email
+// If only fingerprint exists, migrate it to the email record
+async function getOrCreateRecord(email, fingerprint) {
+  // 1. Try email first
+  const { data: emailRecord } = await supabase
+    .from("usage").select("*").eq("email", email).single();
 
-async function getUsageByFingerprint(fingerprint) {
-  const { data, error } = await supabase
-    .from("usage")
-    .select("fingerprint, count, paid, plan, email")
-    .eq("fingerprint", fingerprint)
-    .single();
-  if (error && error.code !== "PGRST116") return null;
-  return data;
+  if (emailRecord) return { record: emailRecord, key: "email", val: email };
+
+  // 2. Try fingerprint — migrate it to email
+  const { data: fpRecord } = await supabase
+    .from("usage").select("*").eq("fingerprint", fingerprint).single();
+
+  if (fpRecord) {
+    // Migrate: attach email to this fingerprint record
+    await supabase.from("usage").update({ email }).eq("fingerprint", fingerprint);
+    return { record: { ...fpRecord, email }, key: "email", val: email };
+  }
+
+  // 3. Brand new user — create record
+  const newRecord = { fingerprint, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() };
+  await supabase.from("usage").insert(newRecord);
+  return { record: newRecord, key: "email", val: email };
 }
 
 export default async function handler(req, res) {
@@ -61,82 +54,34 @@ export default async function handler(req, res) {
   // Admin bypass
   const adminToken = req.headers["x-admin-token"];
   if (adminToken && adminToken === process.env.ADMIN_TOKEN) {
-    return res.json({ allowed: true, isAdmin: true, used: 0, limit: 999 });
+    return res.json({ allowed: true, isAdmin: true, used: 0, limit: 999, paid: true, plan: "admin", email: null });
   }
 
-  // Email is required for all free usage — no email = no access
-  const emailHeader = req.headers["x-email"];
+  const email = req.headers["x-email"] || null;
   const fingerprint = getFingerprint(req);
 
-  if (!emailHeader) {
+  // Email required
+  if (!email) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  // Look up by email first (cross-device), fall back to fingerprint
-  let data = await getUsageByEmail(emailHeader);
-  if (!data) {
-    data = await getUsageByFingerprint(fingerprint);
-  }
+  const { record } = await getOrCreateRecord(email, fingerprint);
+
+  const count = record.count || 0;
+  const paid = record.paid || false;
+  const plan = record.plan || "free";
+  const limit = paid ? (plan === "monthly" ? 15 : 999) : FREE_LIMIT;
 
   if (req.method === "GET") {
-    const count = data?.count || 0;
-    const paid = data?.paid || false;
-    const plan = data?.plan || "free";
-    const userEmail = data?.email || null;
-    const limit = paid ? (plan === "monthly" ? 15 : 999) : FREE_LIMIT;
-
-    return res.json({
-      allowed: paid || count < FREE_LIMIT,
-      used: count,
-      limit,
-      paid,
-      plan,
-      isAdmin: false,
-      email: userEmail,
-    });
+    return res.json({ allowed: paid || count < FREE_LIMIT, used: count, limit, paid, plan, isAdmin: false, email });
   }
 
   if (req.method === "POST") {
-    const body = req.body || {};
-    const emailToSave = emailHeader || body.email || null;
-
-    if (data) {
-      const newCount = (data.count || 0) + 1;
-      // If we found by email, update by email; else by fingerprint
-      let query = supabase
-        .from("usage")
-        .update({
-          count: newCount,
-          last_used: new Date().toISOString(),
-          ...(emailToSave && !data.email ? { email: emailToSave } : {}),
-        });
-
-      if (data.email) {
-        query = query.eq("email", data.email);
-      } else {
-        query = query.eq("fingerprint", data.fingerprint || fingerprint);
-        // If we just got their email now, save it
-        if (emailToSave) {
-          await supabase
-            .from("usage")
-            .update({ email: emailToSave })
-            .eq("fingerprint", data.fingerprint || fingerprint);
-        }
-      }
-      await query;
-      return res.json({ count: newCount, paid: data.paid, plan: data.plan });
-    } else {
-      // New user — create record
-      await supabase.from("usage").insert({
-        fingerprint,
-        count: 1,
-        paid: false,
-        plan: "free",
-        last_used: new Date().toISOString(),
-        ...(emailToSave ? { email: emailToSave } : {}),
-      });
-      return res.json({ count: 1, paid: false, plan: "free" });
-    }
+    const newCount = count + 1;
+    await supabase.from("usage")
+      .update({ count: newCount, last_used: new Date().toISOString() })
+      .eq("email", email);
+    return res.json({ count: newCount, paid, plan });
   }
 
   return res.status(405).json({ error: "Method not allowed" });

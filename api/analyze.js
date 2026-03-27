@@ -24,25 +24,30 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT.");
 }
 
-async function incrementUsage(fingerprint, emailHeader) {
+async function incrementUsage(fingerprint, email) {
   try {
-    let data = null;
-    if (emailHeader) {
-      const { data: d } = await supabase.from("usage").select("fingerprint,count,paid,plan,email")
-        .eq("email", emailHeader).order("last_used", { ascending: false }).limit(1).single();
-      data = d;
-    }
-    if (!data) {
-      const { data: d } = await supabase.from("usage").select("fingerprint,count,paid,plan,email")
-        .eq("fingerprint", fingerprint).single();
-      data = d;
-    }
+    // Always look up and write by email (single source of truth)
+    const { data } = await supabase.from("usage")
+      .select("count").eq("email", email).single();
+
     if (data) {
-      const col = data.email ? "email" : "fingerprint";
-      const val = data.email || data.fingerprint || fingerprint;
-      await supabase.from("usage").update({ count: (data.count || 0) + 1, last_used: new Date().toISOString() }).eq(col, val);
+      await supabase.from("usage")
+        .update({ count: (data.count || 0) + 1, last_used: new Date().toISOString() })
+        .eq("email", email);
     } else {
-      await supabase.from("usage").insert({ fingerprint, count: 1, paid: false, plan: "free", last_used: new Date().toISOString(), ...(emailHeader ? { email: emailHeader } : {}) });
+      // First time — check if fingerprint record exists and migrate
+      const { data: fpData } = await supabase.from("usage")
+        .select("count,paid,plan").eq("fingerprint", fingerprint).single();
+      if (fpData) {
+        await supabase.from("usage")
+          .update({ email, count: (fpData.count || 0) + 1, last_used: new Date().toISOString() })
+          .eq("fingerprint", fingerprint);
+      } else {
+        await supabase.from("usage").insert({
+          fingerprint, email, count: 1, paid: false, plan: "free",
+          last_used: new Date().toISOString()
+        });
+      }
     }
   } catch (e) { console.error("Usage error:", e.message); }
 }
