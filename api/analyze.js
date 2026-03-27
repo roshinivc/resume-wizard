@@ -147,11 +147,11 @@ export default async function handler(req, res) {
 
     const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
-      max_tokens: 4000,
+      max_tokens: 3500,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 4000)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2000)}`
+        content: `RESUME:\n${resumeText.slice(0, 3000)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 3000)}`
       }]
     });
 
@@ -168,7 +168,15 @@ export default async function handler(req, res) {
     const end = jsonStr.lastIndexOf("}");
     if (start !== -1 && end !== -1) jsonStr = jsonStr.slice(start, end + 1);
 
+    if (!jsonStr || start === -1) {
+      throw new Error("AI did not return valid JSON. Please try again.");
+    }
+
     const parsed = JSON.parse(jsonStr);
+
+    if (!parsed.score || !parsed.sections) {
+      throw new Error("Incomplete analysis returned. Please try again.");
+    }
 
     clearInterval(ping);
     res.write(`event: result\ndata: ${JSON.stringify({
