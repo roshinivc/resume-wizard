@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_BASE } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Briefcase, Zap, TrendingUp, Layout, Star, Search,
   ChevronDown, ChevronUp, Loader2, Moon, Sun, RotateCcw,
-  UploadCloud, X, CheckCircle2, ArrowRight, Copy, Check, Download
+  UploadCloud, X, CheckCircle2, ArrowRight, Copy, Check, Download, Lock, Zap as ZapIcon, Crown
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -35,6 +35,86 @@ interface AnalysisResult {
   coverLetter: string;
   hiringManagerNote: string;
   whyBestCandidate: string;
+}
+
+interface UsageStatus {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  paid: boolean;
+  plan: string;
+  isAdmin: boolean;
+}
+
+// ─── Paywall ──────────────────────────────────────────────────────────────────
+
+function PaywallScreen({ used, paygLink, monthlyLink, fingerprint }: {
+  used: number;
+  paygLink: string;
+  monthlyLink: string;
+  fingerprint: string;
+}) {
+  function goToPay(link: string, plan: string) {
+    // Pass fingerprint as URL param so webhook can identify user
+    const url = new URL(link);
+    url.searchParams.set("client_reference_id", fingerprint);
+    url.searchParams.set("metadata[fingerprint]", fingerprint);
+    url.searchParams.set("metadata[plan]", plan);
+    window.open(url.toString(), "_blank");
+  }
+
+  return (
+    <div className="paywall-overlay">
+      <div className="paywall-card">
+        <div className="paywall-icon"><Lock size={32} /></div>
+        <h2 className="paywall-title">You've used your {used} free analyses</h2>
+        <p className="paywall-sub">Unlock full analysis — score, corrections, cover letter, manager note, and why you're the best fit.</p>
+        <div className="paywall-options">
+          <div className="paywall-option paywall-option--featured">
+            <div className="paywall-option-badge">Most Popular</div>
+            <div className="paywall-option-price">$5.99<span>/month</span></div>
+            <div className="paywall-option-name">Monthly Plan</div>
+            <ul className="paywall-option-features">
+              <li>✓ 15 analyses per month</li>
+              <li>✓ All 5 result tabs</li>
+              <li>✓ Cancel or pause anytime</li>
+            </ul>
+            <button className="paywall-btn paywall-btn--primary" onClick={() => goToPay(monthlyLink, "monthly")}>
+              <Crown size={15} /> Subscribe — $5.99/mo
+            </button>
+          </div>
+          <div className="paywall-option">
+            <div className="paywall-option-price">$0.99<span>/analysis</span></div>
+            <div className="paywall-option-name">Pay As You Go</div>
+            <ul className="paywall-option-features">
+              <li>✓ 1 full analysis</li>
+              <li>✓ All 5 result tabs</li>
+              <li>✓ No subscription</li>
+            </ul>
+            <button className="paywall-btn" onClick={() => goToPay(paygLink, "payg")}>
+              <ZapIcon size={15} /> Buy 1 Analysis — $0.99
+            </button>
+          </div>
+        </div>
+        <p className="paywall-note">No account required · Secure payment via Stripe · Cancel anytime</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Locked Tab ───────────────────────────────────────────────────────────────
+
+function LockedTab({ onUnlock }: { onUnlock: () => void }) {
+  return (
+    <div className="locked-tab">
+      <Lock size={28} className="locked-icon" />
+      <h3 className="locked-title">Premium Feature</h3>
+      <p className="locked-sub">Upgrade to access this section</p>
+      <button className="paywall-btn paywall-btn--primary" style={{marginTop: "var(--space-4)"}} onClick={onUnlock}>
+        <Crown size={14} /> Unlock Full Analysis
+      </button>
+    </div>
+  );
 }
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
@@ -233,8 +313,46 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [darkMode, setDarkMode] = useState(window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const [showPaywall, setShowPaywall] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Admin token from URL param — stored in sessionStorage
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("admin");
+    if (token) {
+      sessionStorage.setItem("rw_admin", token);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  // Fingerprint for usage tracking
+  const fingerprint = (() => {
+    let fp = sessionStorage.getItem("rw_fp");
+    if (!fp) {
+      fp = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem("rw_fp", fp);
+    }
+    return fp;
+  })();
+
+  // Check usage status
+  const { data: usageStatus, refetch: refetchUsage } = useQuery<UsageStatus>({
+    queryKey: ["/api/usage"],
+    queryFn: async () => {
+      const adminToken = sessionStorage.getItem("rw_admin") || "";
+      const res = await fetch(`${API_BASE}/api/usage`, {
+        headers: { "x-admin-token": adminToken, "x-fp": fingerprint },
+      });
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
+  const isPaid = usageStatus?.paid || usageStatus?.isAdmin || false;
+  const paygLink = import.meta.env.VITE_STRIPE_PAYG_LINK || "#";
+  const monthlyLink = import.meta.env.VITE_STRIPE_MONTHLY_LINK || "#";
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
@@ -242,6 +360,17 @@ export default function Home() {
 
   const submitMutation = useMutation({
     mutationFn: (): Promise<AnalysisResult> => new Promise(async (resolve, reject) => {
+      // Check usage before running
+      const adminToken = sessionStorage.getItem("rw_admin") || "";
+      const usageRes = await fetch(`${API_BASE}/api/usage`, {
+        headers: { "x-admin-token": adminToken, "x-fp": fingerprint },
+      });
+      const usage: UsageStatus = await usageRes.json();
+      if (!usage.allowed) {
+        setShowPaywall(true);
+        return reject(new Error("PAYWALL"));
+      }
+
       const form = new FormData();
       form.append("resume", resumeFile!);
       form.append("jobDescription", jobDesc);
@@ -285,10 +414,19 @@ export default function Home() {
     onSuccess: (data) => {
       setResult(data);
       setActiveTab("feedback");
+      // Increment usage count
+      const adminToken = sessionStorage.getItem("rw_admin") || "";
+      fetch(`${API_BASE}/api/usage`, {
+        method: "POST",
+        headers: { "x-admin-token": adminToken, "x-fp": fingerprint, "Content-Type": "application/json" },
+        body: JSON.stringify({ fingerprint }),
+      }).then(() => refetchUsage());
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     },
     onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      if (err.message !== "PAYWALL") {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+      }
     },
   });
 
@@ -305,6 +443,18 @@ export default function Home() {
 
   return (
     <div className="page-root">
+      {showPaywall && (
+        <div className="paywall-backdrop" onClick={() => setShowPaywall(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <PaywallScreen
+              used={usageStatus?.used || 3}
+              paygLink={paygLink}
+              monthlyLink={monthlyLink}
+              fingerprint={fingerprint}
+            />
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header className="site-header">
         <div className="header-inner">
@@ -315,9 +465,21 @@ export default function Home() {
               <p className="logo-tagline">Match your resume to any job</p>
             </div>
           </div>
-          <button className="theme-toggle" onClick={() => setDarkMode(d => !d)} aria-label="Toggle dark mode">
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <div className="header-right">
+            {usageStatus && !usageStatus.isAdmin && !usageStatus.paid && (
+              <span className="usage-badge">
+                {Math.max(0, 3 - usageStatus.used)} free left
+              </span>
+            )}
+            {usageStatus?.paid && (
+              <span className="usage-badge usage-badge--paid">
+                <Crown size={11} /> {usageStatus.plan === "monthly" ? `${Math.max(0, 15 - usageStatus.used)} left` : "Paid"}
+              </span>
+            )}
+            <button className="theme-toggle" onClick={() => setDarkMode(d => !d)} aria-label="Toggle dark mode">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -403,23 +565,28 @@ export default function Home() {
             )}
 
             {activeTab === "corrections" && (
-              <div className="corrections-grid">
-                <p className="corrections-note">
-                  These edits are based only on what's already in your resume — rephrased and aligned with the job description. Nothing fabricated.
-                </p>
-                {result.corrections.map((c, i) => <CorrectionCard key={i} correction={c} index={i} />)}
-              </div>
+              isPaid
+                ? <div className="corrections-grid">
+                    <p className="corrections-note">These edits are based only on what's already in your resume — rephrased and aligned with the job description. Nothing fabricated.</p>
+                    {result.corrections.map((c, i) => <CorrectionCard key={i} correction={c} index={i} />)}
+                  </div>
+                : <LockedTab onUnlock={() => setShowPaywall(true)} />
             )}
 
             {activeTab === "cover-letter" && (
-              <CoverLetterPanel text={result.coverLetter} />
+              isPaid
+                ? <CoverLetterPanel text={result.coverLetter} />
+                : <LockedTab onUnlock={() => setShowPaywall(true)} />
             )}
 
             {activeTab === "manager-note" && (
-              <CoverLetterPanel text={result.hiringManagerNote} />
+              isPaid
+                ? <CoverLetterPanel text={result.hiringManagerNote} />
+                : <LockedTab onUnlock={() => setShowPaywall(true)} />
             )}
 
             {activeTab === "why-me" && (
+              !isPaid ? <LockedTab onUnlock={() => setShowPaywall(true)} /> :
               <div className="why-me-panel">
                 <div className="cover-letter-toolbar">
                   <h3 className="cover-letter-title">Why I'm the Best Candidate</h3>
