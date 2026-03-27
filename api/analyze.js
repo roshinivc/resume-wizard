@@ -79,6 +79,11 @@ export default async function handler(req, res) {
   const adminToken = req.headers["x-admin-token"] || null;
   const isAdmin = adminToken && adminToken === process.env.ADMIN_TOKEN;
 
+  // Email required (except admin)
+  if (!emailHeader && !isAdmin) {
+    return res.status(401).json({ error: "Please sign in with your email to use Resume Wizard." });
+  }
+
   let resumeText;
   try {
     const buffer = await readFile(resumeFile.filepath);

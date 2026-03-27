@@ -50,9 +50,8 @@ interface UsageStatus {
 
 // ─── Landing Screen ─────────────────────────────────────────────────────────
 
-function LandingScreen({ onSignIn, onSkip }: {
+function LandingScreen({ onSignIn }: {
   onSignIn: (email: string) => void;
-  onSkip: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -133,9 +132,9 @@ function LandingScreen({ onSignIn, onSkip }: {
                 </button>
               </div>
               {error && <p className="landing-error">{error}</p>}
-              <button className="landing-skip" onClick={onSkip} data-testid="button-landing-skip">
-                Skip for now — try without saving progress →
-              </button>
+              <p className="landing-required-note">
+                Email is required to track your 3 free analyses across all your devices.
+              </p>
             </>
           ) : (
             <div className="landing-sent">
@@ -541,8 +540,7 @@ export default function Home() {
   const [showLanding, setShowLanding] = useState(() => {
     const hasEmail = !!sessionStorage.getItem("rw_email");
     const hasAdmin = !!sessionStorage.getItem("rw_admin");
-    const hasSkipped = !!sessionStorage.getItem("rw_skipped");
-    return !hasEmail && !hasAdmin && !hasSkipped;
+    return !hasEmail && !hasAdmin;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -641,7 +639,6 @@ export default function Home() {
 
   function handleLogout() {
     sessionStorage.removeItem("rw_email");
-    sessionStorage.removeItem("rw_skipped");
     setLoggedInEmail(null);
     setShowLanding(true);
     refetchUsage();
@@ -651,11 +648,6 @@ export default function Home() {
     setLoggedInEmail(email);
     setShowLanding(false);
     setTimeout(() => refetchUsage(), 500);
-  }
-
-  function handleLandingSkip() {
-    sessionStorage.setItem("rw_skipped", "1");
-    setShowLanding(false);
   }
 
   const submitMutation = useMutation({
@@ -749,7 +741,7 @@ export default function Home() {
 
   // Show landing screen for new visitors
   if (showLanding) {
-    return <LandingScreen onSignIn={handleLandingSignIn} onSkip={handleLandingSkip} />;
+    return <LandingScreen onSignIn={handleLandingSignIn} />;
   }
 
   return (

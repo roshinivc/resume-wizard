@@ -64,23 +64,16 @@ export default async function handler(req, res) {
     return res.json({ allowed: true, isAdmin: true, used: 0, limit: 999 });
   }
 
-  // Email takes priority (logged-in user, cross-device)
+  // Email is required for all free usage — no email = no access
   const emailHeader = req.headers["x-email"];
   const fingerprint = getFingerprint(req);
 
-  // Try to find record by email first, then by fingerprint
-  let data = null;
-  let lookupKey = "fingerprint";
-  let lookupVal = fingerprint;
-
-  if (emailHeader) {
-    data = await getUsageByEmail(emailHeader);
-    if (data) {
-      lookupKey = "email";
-      lookupVal = emailHeader;
-    }
+  if (!emailHeader) {
+    return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
+  // Look up by email first (cross-device), fall back to fingerprint
+  let data = await getUsageByEmail(emailHeader);
   if (!data) {
     data = await getUsageByFingerprint(fingerprint);
   }
