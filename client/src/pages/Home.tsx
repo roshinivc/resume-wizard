@@ -278,6 +278,8 @@ function PaywallScreen({ used, paygLink, monthlyLink, fingerprint, onSignIn }: {
     url.searchParams.set("client_reference_id", fingerprint);
     url.searchParams.set("metadata[fingerprint]", fingerprint);
     url.searchParams.set("metadata[plan]", plan);
+    // Stripe will append this to the redirect URL after payment
+    url.searchParams.set("metadata[return_url]", "https://resume-wizard-opal.vercel.app/?payment=success");
     window.open(url.toString(), "_blank");
   }
 
@@ -555,6 +557,35 @@ export default function Home() {
       setShowLanding(false);
       window.history.replaceState({}, "", window.location.pathname);
     }
+  }, []);
+
+  // Detect Stripe redirect back after payment — poll until webhook marks as paid
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromPayment = params.get("payment") === "success";
+    if (!fromPayment) return;
+    // Clean the URL immediately
+    window.history.replaceState({}, "", window.location.pathname);
+    // Poll usage every 2s up to 10 times until paid=true
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      const email = sessionStorage.getItem("rw_email") || "";
+      const fp = sessionStorage.getItem("rw_fp") || "";
+      const headers: Record<string, string> = { "x-fp": fp };
+      if (email) headers["x-email"] = email;
+      try {
+        const res = await fetch(`${API_BASE}/api/usage`, { headers });
+        const data = await res.json();
+        if (data.paid) {
+          clearInterval(poll);
+          refetchUsage();
+          toast({ title: "Payment confirmed!", description: "All features are now unlocked. Welcome aboard!" });
+        }
+      } catch (_) {}
+      if (attempts >= 10) clearInterval(poll);
+    }, 2000);
+    return () => clearInterval(poll);
   }, []);
 
   // Restore email from sessionStorage on load
