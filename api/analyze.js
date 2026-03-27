@@ -26,28 +26,33 @@ async function extractText(buffer, mimetype, filename) {
 
 async function incrementUsage(fingerprint, email) {
   try {
-    // Always look up and write by email (single source of truth)
-    const { data } = await supabase.from("usage")
-      .select("count").eq("email", email).single();
+    // Find the record — prefer email lookup for cross-device accuracy
+    let record = null;
+    if (email) {
+      const { data } = await supabase.from("usage")
+        .select("fingerprint,count,paid,plan")
+        .eq("email", email)
+        .order("last_used", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) record = data[0];
+    }
+    if (!record) {
+      const { data } = await supabase.from("usage")
+        .select("fingerprint,count,paid,plan")
+        .eq("fingerprint", fingerprint)
+        .limit(1);
+      if (data && data.length > 0) record = data[0];
+    }
 
-    if (data) {
+    if (record) {
       await supabase.from("usage")
-        .update({ count: (data.count || 0) + 1, last_used: new Date().toISOString() })
-        .eq("email", email);
+        .update({ count: (record.count || 0) + 1, last_used: new Date().toISOString(), ...(email && !record.email ? { email } : {}) })
+        .eq("fingerprint", record.fingerprint);
     } else {
-      // First time — check if fingerprint record exists and migrate
-      const { data: fpData } = await supabase.from("usage")
-        .select("count,paid,plan").eq("fingerprint", fingerprint).single();
-      if (fpData) {
-        await supabase.from("usage")
-          .update({ email, count: (fpData.count || 0) + 1, last_used: new Date().toISOString() })
-          .eq("fingerprint", fingerprint);
-      } else {
-        await supabase.from("usage").insert({
-          fingerprint, email, count: 1, paid: false, plan: "free",
-          last_used: new Date().toISOString()
-        });
-      }
+      await supabase.from("usage").upsert({
+        fingerprint, email, count: 1, paid: false, plan: "free",
+        last_used: new Date().toISOString()
+      }, { onConflict: "fingerprint" });
     }
   } catch (e) { console.error("Usage error:", e.message); }
 }

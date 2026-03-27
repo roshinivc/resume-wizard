@@ -1,4 +1,4 @@
-// Usage tracking API — email-based, cross-device
+// Usage tracking API — fingerprint as PK, email for cross-device lookup
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -17,32 +17,38 @@ function getFingerprint(req) {
   let hash = 0;
   const str = ip + ua;
   for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-  return Math.abs(hash).toString(36);
+  return "srv_" + Math.abs(hash).toString(36);
 }
 
-// Get or create a usage record — always keyed by email
-// If only fingerprint exists, migrate it to the email record
-async function getOrCreateRecord(email, fingerprint) {
-  // 1. Try email first
-  const { data: emailRecord } = await supabase
-    .from("usage").select("*").eq("email", email).single();
+async function findRecord(email, fingerprint) {
+  // 1. Look up by email — finds the canonical record across devices
+  const { data: byEmail } = await supabase
+    .from("usage")
+    .select("*")
+    .eq("email", email)
+    .order("last_used", { ascending: false })
+    .limit(1);
 
-  if (emailRecord) return { record: emailRecord, key: "email", val: email };
+  if (byEmail && byEmail.length > 0) return byEmail[0];
 
-  // 2. Try fingerprint — migrate it to email
-  const { data: fpRecord } = await supabase
-    .from("usage").select("*").eq("fingerprint", fingerprint).single();
+  // 2. Look up by fingerprint
+  const { data: byFp } = await supabase
+    .from("usage")
+    .select("*")
+    .eq("fingerprint", fingerprint)
+    .limit(1);
 
-  if (fpRecord) {
-    // Migrate: attach email to this fingerprint record
-    await supabase.from("usage").update({ email }).eq("fingerprint", fingerprint);
-    return { record: { ...fpRecord, email }, key: "email", val: email };
+  if (byFp && byFp.length > 0) {
+    // Attach email to this record for future cross-device lookups
+    const record = byFp[0];
+    if (!record.email) {
+      await supabase.from("usage").update({ email }).eq("fingerprint", record.fingerprint);
+      record.email = email;
+    }
+    return record;
   }
 
-  // 3. Brand new user — create record
-  const newRecord = { fingerprint, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() };
-  await supabase.from("usage").insert(newRecord);
-  return { record: newRecord, key: "email", val: email };
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -65,22 +71,35 @@ export default async function handler(req, res) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  const { record } = await getOrCreateRecord(email, fingerprint);
+  let record = await findRecord(email, fingerprint);
 
-  const count = record.count || 0;
-  const paid = record.paid || false;
-  const plan = record.plan || "free";
+  // Brand new user — create record keyed by fingerprint, with email attached
+  if (!record) {
+    const newFp = req.headers["x-fp"] || fingerprint;
+    const { data: inserted } = await supabase
+      .from("usage")
+      .upsert({ fingerprint: newFp, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() }, { onConflict: "fingerprint" })
+      .select()
+      .single();
+    record = inserted || { fingerprint: newFp, email, count: 0, paid: false, plan: "free" };
+  }
+
+  const count = record?.count || 0;
+  const paid = record?.paid || false;
+  const plan = record?.plan || "free";
   const limit = paid ? (plan === "monthly" ? 15 : 999) : FREE_LIMIT;
+  const allowed = paid || count < FREE_LIMIT;
 
   if (req.method === "GET") {
-    return res.json({ allowed: paid || count < FREE_LIMIT, used: count, limit, paid, plan, isAdmin: false, email });
+    return res.json({ allowed, used: count, limit, paid, plan, isAdmin: false, email });
   }
 
   if (req.method === "POST") {
     const newCount = count + 1;
+    // Update the record we found (by its actual fingerprint)
     await supabase.from("usage")
       .update({ count: newCount, last_used: new Date().toISOString() })
-      .eq("email", email);
+      .eq("fingerprint", record.fingerprint);
     return res.json({ count: newCount, paid, plan });
   }
 
