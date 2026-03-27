@@ -1,8 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { IncomingForm } from "formidable";
 import { readFile } from "fs/promises";
+import { createClient } from "@supabase/supabase-js";
 
 export const config = { api: { bodyParser: false } };
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 async function extractText(buffer, mimetype, filename) {
   const ext = (filename || "").split(".").pop()?.toLowerCase();
@@ -18,87 +24,77 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT.");
 }
 
-const SYSTEM_PROMPT = `You are a brutally honest senior hiring manager scoring resumes against job descriptions.
-
-SCORING SCALE — follow strictly:
-9-10: Near-perfect. 80%+ requirements met with evidence, right level, right industry.
-7-8: Good match. Most requirements met but 2-3 clear gaps.
-5-6: Partial. Core skills present but significant gaps in keywords or experience.
-3-4: Weak. Some transferable skills but major gaps, ATS would likely filter.
-1-2: Poor. Wrong industry, wrong level, or missing most requirements.
-Important: Most resumes score 4-7. Only give 8+ if genuinely 80%+ match. Inflated scores help no one.
-
-CORRECTIONS: Only rewrite text that is ALREADY in the resume. Never invent skills or experience.
-
-Return ONLY a valid JSON object. No markdown, no explanation outside JSON.
-
-The JSON must follow this exact structure:
-{
-  "score": 6,
-  "scoreRationale": "Two sentences explaining the score and main gaps.",
-  "sections": [
-    {
-      "category": "Keyword Match",
-      "icon": "search",
-      "rating": "moderate",
-      "summary": "One sentence summary.",
-      "details": ["Point 1.", "Point 2.", "Point 3."]
-    },
-    {
-      "category": "Work Experience",
-      "icon": "briefcase",
-      "rating": "strong",
-      "summary": "One sentence summary.",
-      "details": ["Point 1.", "Point 2.", "Point 3."]
-    },
-    {
-      "category": "Skills Alignment",
-      "icon": "zap",
-      "rating": "moderate",
-      "summary": "One sentence summary.",
-      "details": ["Point 1.", "Point 2.", "Point 3."]
-    },
-    {
-      "category": "Impact & Metrics",
-      "icon": "trending-up",
-      "rating": "weak",
-      "summary": "One sentence summary.",
-      "details": ["Point 1.", "Point 2.", "Point 3."]
-    },
-    {
-      "category": "Formatting & Clarity",
-      "icon": "layout",
-      "rating": "strong",
-      "summary": "One sentence summary.",
-      "details": ["Point 1.", "Point 2.", "Point 3."]
-    },
-    {
-      "category": "Quick Wins",
-      "icon": "star",
-      "rating": "strong",
-      "summary": "Top 3 highest-impact changes.",
-      "details": ["Change 1.", "Change 2.", "Change 3."]
+// Increment usage count server-side (reliable — not dependent on frontend callback)
+async function incrementUsage(fingerprint, emailHeader) {
+  try {
+    // Look up existing record
+    let data = null;
+    if (emailHeader) {
+      const { data: emailData } = await supabase
+        .from("usage").select("fingerprint, count, paid, plan, email")
+        .eq("email", emailHeader).order("last_used", { ascending: false }).limit(1).single();
+      data = emailData;
     }
-  ],
-  "corrections": [
-    {
-      "section": "Which resume section",
-      "original": "Exact text from resume.",
-      "improved": "Rewritten version — stronger, more aligned, still 100% truthful.",
-      "why": "One sentence explanation."
+    if (!data) {
+      const { data: fpData } = await supabase
+        .from("usage").select("fingerprint, count, paid, plan, email")
+        .eq("fingerprint", fingerprint).single();
+      data = fpData;
     }
-  ],
-  "coverLetter": "Full 250-word cover letter starting with Dear Hiring Manager, tailored to this specific job description using actual experience from the resume.",
-  "hiringManagerNote": "8-10 line direct message to hiring manager. Conversational, confident. Opens with something specific about the role, connects 2-3 resume achievements to the role needs, ends with ask for conversation. No generic openers.",
-  "whyBestCandidate": "5-6 plain text lines separated by \\n. Each: Strength label: Evidence — Why it matters for this role."
+
+    if (data) {
+      const newCount = (data.count || 0) + 1;
+      const updateBy = data.email ? { col: "email", val: data.email } : { col: "fingerprint", val: data.fingerprint || fingerprint };
+      await supabase.from("usage")
+        .update({ count: newCount, last_used: new Date().toISOString() })
+        .eq(updateBy.col, updateBy.val);
+    } else {
+      await supabase.from("usage").insert({
+        fingerprint,
+        count: 1,
+        paid: false,
+        plan: "free",
+        last_used: new Date().toISOString(),
+        ...(emailHeader ? { email: emailHeader } : {}),
+      });
+    }
+  } catch (e) {
+    console.error("Usage increment error:", e.message);
+  }
 }
 
-Replace the example values with real analysis. Provide 3-4 corrections. Rating values must be exactly: strong, moderate, or weak.`;
+// Compact prompt — shorter output = faster response = no timeout
+const SYSTEM_PROMPT = `You are a senior hiring manager scoring resumes against job descriptions.
+
+SCORING: 9-10=80%+ match. 7-8=good, 2-3 gaps. 5-6=partial. 3-4=weak. 1-2=poor. Most score 4-7.
+CORRECTIONS: Only rewrite text already in the resume. Never invent anything.
+Return ONLY valid JSON, no markdown.
+
+{
+  "score": 6,
+  "scoreRationale": "Two sentences max.",
+  "sections": [
+    {"category":"Keyword Match","icon":"search","rating":"moderate","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
+    {"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
+    {"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
+    {"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
+    {"category":"Formatting & Clarity","icon":"layout","rating":"strong","summary":"One sentence.","details":["Point 1.","Point 2.","Point 3."]},
+    {"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 changes.","details":["Change 1.","Change 2.","Change 3."]}
+  ],
+  "corrections": [
+    {"section":"Section name","original":"Exact text from resume.","improved":"Rewritten version.","why":"One sentence."}
+  ],
+  "coverLetter": "150-word cover letter. Dear Hiring Manager, [body]. Sincerely, [name]",
+  "hiringManagerNote": "6-8 lines. Direct, confident, specific to this role. No generic openers.",
+  "whyBestCandidate": "4-5 lines separated by \\n. Each: Label: Evidence — Why it matters."
+}
+
+Provide exactly 3 corrections. Ratings must be: strong, moderate, or weak.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-fp, x-email, x-admin-token");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -113,6 +109,12 @@ export default async function handler(req, res) {
   if (!resumeFile) return res.status(400).json({ error: "Please upload a resume file." });
   if (!jobDescription || jobDescription.trim().length < 20)
     return res.status(400).json({ error: "Please paste a job description." });
+
+  // Get fingerprint + email from headers (passed by frontend)
+  const fingerprint = req.headers["x-fp"] || "unknown";
+  const emailHeader = req.headers["x-email"] || null;
+  const adminToken = req.headers["x-admin-token"] || null;
+  const isAdmin = adminToken && adminToken === process.env.ADMIN_TOKEN;
 
   let resumeText;
   try {
@@ -147,11 +149,11 @@ export default async function handler(req, res) {
 
     const stream = await client.messages.stream({
       model: "claude-haiku-4-5",
-      max_tokens: 4096,
+      max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 1800)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1800)}`
+        content: `RESUME:\n${resumeText.slice(0, 1500)}\n\n---\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1500)}`
       }]
     });
 
@@ -172,38 +174,37 @@ export default async function handler(req, res) {
       throw new Error("AI did not return valid JSON. Please try again.");
     }
 
-    // Attempt parse; if it fails try to repair truncated JSON
+    // Try parse — repair if truncated
     let parsed;
     try {
       parsed = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      // Response was cut off — try closing open structures
+    } catch {
       let repaired = jsonStr;
-      // Count unclosed brackets
       let openBraces = 0, openBrackets = 0, inStr = false, escape = false;
       for (const ch of repaired) {
         if (escape) { escape = false; continue; }
-        if (ch === '\\' && inStr) { escape = true; continue; }
+        if (ch === "\\" && inStr) { escape = true; continue; }
         if (ch === '"') { inStr = !inStr; continue; }
         if (inStr) continue;
-        if (ch === '{') openBraces++;
-        if (ch === '}') openBraces--;
-        if (ch === '[') openBrackets++;
-        if (ch === ']') openBrackets--;
+        if (ch === "{") openBraces++;
+        if (ch === "}") openBraces--;
+        if (ch === "[") openBrackets++;
+        if (ch === "]") openBrackets--;
       }
-      // Close any open string, then arrays, then objects
       if (inStr) repaired += '"';
-      repaired += ']'.repeat(Math.max(0, openBrackets));
-      repaired += '}'.repeat(Math.max(0, openBraces));
-      try {
-        parsed = JSON.parse(repaired);
-      } catch {
-        throw new Error("Analysis response was incomplete. Please try again.");
-      }
+      repaired += "]".repeat(Math.max(0, openBrackets));
+      repaired += "}".repeat(Math.max(0, openBraces));
+      try { parsed = JSON.parse(repaired); }
+      catch { throw new Error("Analysis response was incomplete. Please try again."); }
     }
 
     if (!parsed.score || !parsed.sections) {
       throw new Error("Incomplete analysis returned. Please try again.");
+    }
+
+    // Increment usage server-side (reliable — works even if browser closes)
+    if (!isAdmin) {
+      await incrementUsage(fingerprint, emailHeader);
     }
 
     clearInterval(ping);

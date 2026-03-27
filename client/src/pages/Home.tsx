@@ -536,7 +536,15 @@ export default function Home() {
 
       let res: Response;
       try {
-        res = await fetch(`/api/analyze`, { method: "POST", body: form });
+        res = await fetch(`/api/analyze`, {
+          method: "POST",
+          body: form,
+          headers: {
+            "x-fp": fingerprint,
+            "x-admin-token": adminToken,
+            ...(email ? { "x-email": email } : {}),
+          },
+        });
       } catch {
         return reject(new Error("Network error — please try again."));
       }
@@ -572,19 +580,8 @@ export default function Home() {
     onSuccess: (data) => {
       setResult(data);
       setActiveTab("feedback");
-      const adminToken = sessionStorage.getItem("rw_admin") || "";
-      const email = sessionStorage.getItem("rw_email") || "";
-      const headers: Record<string, string> = {
-        "x-admin-token": adminToken,
-        "x-fp": fingerprint,
-        "Content-Type": "application/json",
-      };
-      if (email) headers["x-email"] = email;
-      fetch(`${API_BASE}/api/usage`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ fingerprint, email }),
-      }).then(() => refetchUsage());
+      // Usage already incremented server-side in analyze.js — just refresh the display
+      refetchUsage();
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     },
     onError: (err: Error) => {
