@@ -819,3 +819,11 @@ button { cursor: pointer; background: none; border: none; }
   flex-shrink: 0;
   margin-top: 3px;
 }
+
+/* ─── Logo image ─────────────────────────────────────────────────────────────── */
+.logo-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+}

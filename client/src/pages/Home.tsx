@@ -309,15 +309,7 @@ export default function Home() {
       <header className="site-header">
         <div className="header-inner">
           <div className="logo-group">
-            <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-label="Resume Wizard" className="logo-svg">
-              <rect x="4" y="2" width="22" height="28" rx="3" fill="var(--color-primary)" opacity="0.15" />
-              <rect x="4" y="2" width="22" height="28" rx="3" stroke="var(--color-primary)" strokeWidth="1.8" />
-              <line x1="10" y1="10" x2="20" y2="10" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="10" y1="15" x2="20" y2="15" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" />
-              <line x1="10" y1="20" x2="16" y2="20" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" />
-              <circle cx="27" cy="27" r="7" fill="var(--color-bg)" stroke="var(--color-primary)" strokeWidth="1.8" />
-              <path d="M24 27l2 2 4-4" stroke="var(--color-primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <img src="/logo.png" alt="Resume Wizard" className="logo-img" />
             <div>
               <h1 className="logo-name">Resume Wizard</h1>
               <p className="logo-tagline">Match your resume to any job</p>
