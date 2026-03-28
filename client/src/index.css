@@ -826,6 +826,10 @@ button { cursor: pointer; background: none; border: none; }
   height: 44px;
   object-fit: contain;
   flex-shrink: 0;
+  border: 2px solid #1e3a5f;
+  border-radius: var(--radius-md);
+  padding: 2px;
+  background: #fff;
 }
 
 /* ─── Footer disclaimer ───────────────────────────────────────────────────────── */
@@ -1173,7 +1177,7 @@ button { cursor: pointer; background: none; border: none; }
   align-items: center;
   gap: 10px;
 }
-.landing-logo { width: 32px; height: 32px; object-fit: contain; }
+.landing-logo { width: 32px; height: 32px; object-fit: contain; border: 2px solid #1e3a5f; border-radius: 6px; padding: 1px; background: #fff; }
 .landing-title {
   font-size: 15px;
   font-weight: 700;
@@ -1640,7 +1644,7 @@ button { cursor: pointer; background: none; border: none; }
   margin-bottom: var(--space-6);
 }
 @media (max-width: 540px) { .about-story { flex-direction: column; align-items: center; text-align: center; } }
-.about-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+.about-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; border: 2px solid #1e3a5f; border-radius: 10px; padding: 3px; background: #fff; }
 .about-name {
   font-size: var(--text-base);
   font-weight: 800;
