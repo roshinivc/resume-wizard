@@ -60,6 +60,16 @@ function LandingScreen({ onSignIn }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Always show landing in light mode
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", "light");
+    return () => {
+      // Restore user's preferred theme when leaving landing
+      const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    };
+  }, []);
+
   async function handleSend() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError("Please enter a valid email address.");
