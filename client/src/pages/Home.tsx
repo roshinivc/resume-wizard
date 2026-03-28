@@ -4,6 +4,7 @@ import { API_BASE } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import {
   FileText, Briefcase, Zap, TrendingUp, Layout, Star, Search,
   ChevronDown, ChevronUp, Loader2, Moon, Sun, RotateCcw,
@@ -818,6 +819,10 @@ export default function Home() {
               <p className="logo-tagline">Built by a job seeker, for job seekers — honest AI feedback that respects your time.</p>
             </div>
           </div>
+          <nav className="header-nav">
+            <Link href="/how-to-use" className="header-nav-link">How to Use</Link>
+            <Link href="/about" className="header-nav-link">About</Link>
+          </nav>
           <div className="header-right">
             {/* Logged-in user display */}
             {loggedInEmail && (
@@ -1011,6 +1016,10 @@ export default function Home() {
           Resume Wizard is not responsible for job application outcomes.
         </p>
         <div className="footer-links-row">
+          <Link href="/how-to-use" className="footer-link">How to Use</Link>
+          <span className="footer-dot">·</span>
+          <Link href="/about" className="footer-link">About</Link>
+          <span className="footer-dot">·</span>
           <a href="https://roshinivc.github.io/resume-wizard/privacy.html" target="_blank" rel="noopener noreferrer" className="footer-link">Privacy Policy</a>
           <span className="footer-dot">·</span>
           <a href="https://roshinivc.github.io/resume-wizard/terms.html" target="_blank" rel="noopener noreferrer" className="footer-link">Terms of Service</a>
