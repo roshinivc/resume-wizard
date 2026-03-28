@@ -109,7 +109,7 @@ function LandingScreen({ onSignIn }: {
         {/* Left */}
         <div className="landing-left">
           <p className="landing-eyebrow">AI Resume Analyzer</p>
-          <h2 className="landing-headline">Know how your resume scores before you apply.</h2>
+          <h2 className="landing-headline">AI-powered resume feedback, tailored to every job you apply for.</h2>
           <p className="landing-sub">Upload your resume, paste a job description. Get an honest match score, targeted corrections, and a tailored cover letter in seconds.</p>
           <div className="landing-features">
             <div className="landing-feature"><span className="landing-feature-dot" />3 free analyses included</div>
