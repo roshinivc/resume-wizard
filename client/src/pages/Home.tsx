@@ -809,7 +809,7 @@ export default function Home() {
       {/* Header */}
       <header className="site-header">
         <div className="header-inner">
-          <div className="logo-group">
+          <div className="logo-group" style={{cursor:"pointer"}} onClick={() => setShowLanding(true)}>
             <img src="/logo.png" alt="Resume Wizard" className="logo-img" />
             <div>
               <h1 className="logo-name">Resume Wizard</h1>
