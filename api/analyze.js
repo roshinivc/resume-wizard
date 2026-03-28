@@ -25,36 +25,48 @@ async function extractText(buffer, mimetype, filename) {
 }
 
 async function incrementUsage(fingerprint, email) {
-  try {
-    // Find the record — prefer email lookup for cross-device accuracy
-    let record = null;
-    if (email) {
-      const { data } = await supabase.from("usage")
-        .select("fingerprint,count,paid,plan")
-        .eq("email", email)
-        .order("last_used", { ascending: false })
-        .limit(1);
-      if (data && data.length > 0) record = data[0];
+  // 1. Try by email first
+  if (email) {
+    const { data, error } = await supabase.from("usage")
+      .select("fingerprint,count,paid,plan")
+      .eq("email", email)
+      .order("last_used", { ascending: false })
+      .limit(1);
+    console.log("Email lookup:", JSON.stringify({ data, error: error?.message }));
+    if (data && data.length > 0) {
+      const rec = data[0];
+      const { error: ue } = await supabase.from("usage")
+        .update({ count: (rec.count || 0) + 1, last_used: new Date().toISOString() })
+        .eq("fingerprint", rec.fingerprint);
+      console.log("Update by email record:", ue?.message || "ok");
+      return { updated: rec.fingerprint, newCount: (rec.count || 0) + 1 };
     }
-    if (!record) {
-      const { data } = await supabase.from("usage")
-        .select("fingerprint,count,paid,plan")
-        .eq("fingerprint", fingerprint)
-        .limit(1);
-      if (data && data.length > 0) record = data[0];
-    }
+  }
 
-    if (record) {
-      await supabase.from("usage")
-        .update({ count: (record.count || 0) + 1, last_used: new Date().toISOString(), ...(email && !record.email ? { email } : {}) })
-        .eq("fingerprint", record.fingerprint);
-    } else {
-      await supabase.from("usage").upsert({
-        fingerprint, email, count: 1, paid: false, plan: "free",
-        last_used: new Date().toISOString()
-      }, { onConflict: "fingerprint" });
+  // 2. Try by fingerprint
+  if (fingerprint) {
+    const { data, error } = await supabase.from("usage")
+      .select("fingerprint,count,paid,plan")
+      .eq("fingerprint", fingerprint)
+      .limit(1);
+    console.log("FP lookup:", JSON.stringify({ data, error: error?.message }));
+    if (data && data.length > 0) {
+      const rec = data[0];
+      const updateData = { count: (rec.count || 0) + 1, last_used: new Date().toISOString() };
+      if (email) updateData.email = email;
+      const { error: ue } = await supabase.from("usage").update(updateData).eq("fingerprint", fingerprint);
+      console.log("Update by fp:", ue?.message || "ok");
+      return { updated: fingerprint, newCount: (rec.count || 0) + 1 };
     }
-  } catch (e) { console.error("Usage error:", e.message); }
+  }
+
+  // 3. Create new
+  const newFp = fingerprint || "anl_" + Math.random().toString(36).slice(2);
+  const insertData = { fingerprint: newFp, count: 1, paid: false, plan: "free", last_used: new Date().toISOString() };
+  if (email) insertData.email = email;
+  const { error: ie } = await supabase.from("usage").upsert(insertData, { onConflict: "fingerprint" });
+  console.log("Insert new:", ie?.message || "ok", JSON.stringify(insertData));
+  return { inserted: newFp };
 }
 
 // Minimal prompt — every token saved = faster response
@@ -171,7 +183,10 @@ export default async function handler(req, res) {
     if (!parsed.score || !parsed.sections) throw new Error("Incomplete analysis. Please try again.");
 
     // Increment usage server-side
-    if (!isAdmin) await incrementUsage(fingerprint, emailHeader);
+    if (!isAdmin) {
+      const result = await incrementUsage(fingerprint, emailHeader);
+      console.log("Usage increment result:", JSON.stringify(result));
+    }
 
     clearInterval(ping);
     res.write(`event: result\ndata: ${JSON.stringify({
