@@ -1,4 +1,4 @@
-// Usage tracking API — fingerprint as PK, email for cross-device lookup
+// Usage tracking API
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -7,49 +7,6 @@ const supabase = createClient(
 );
 
 const FREE_LIMIT = 3;
-
-function getFingerprint(req) {
-  const clientFp = req.headers["x-fp"];
-  if (clientFp && clientFp.length > 4) return clientFp;
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
-    || req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown";
-  const ua = req.headers["user-agent"] || "unknown";
-  let hash = 0;
-  const str = ip + ua;
-  for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-  return "srv_" + Math.abs(hash).toString(36);
-}
-
-async function findRecord(email, fingerprint) {
-  // 1. Look up by email — finds the canonical record across devices
-  const { data: byEmail } = await supabase
-    .from("usage")
-    .select("*")
-    .eq("email", email)
-    .order("last_used", { ascending: false })
-    .limit(1);
-
-  if (byEmail && byEmail.length > 0) return byEmail[0];
-
-  // 2. Look up by fingerprint
-  const { data: byFp } = await supabase
-    .from("usage")
-    .select("*")
-    .eq("fingerprint", fingerprint)
-    .limit(1);
-
-  if (byFp && byFp.length > 0) {
-    // Attach email to this record for future cross-device lookups
-    const record = byFp[0];
-    if (!record.email) {
-      await supabase.from("usage").update({ email }).eq("fingerprint", record.fingerprint);
-      record.email = email;
-    }
-    return record;
-  }
-
-  return null;
-}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -64,42 +21,65 @@ export default async function handler(req, res) {
   }
 
   const email = req.headers["x-email"] || null;
-  const fingerprint = getFingerprint(req);
+  const fp = req.headers["x-fp"] || null;
 
   // Email required
   if (!email) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  let record = await findRecord(email, fingerprint);
+  // Try to find record by email first, then by fingerprint
+  let record = null;
 
-  // Brand new user — create record keyed by fingerprint, with email attached
+  // 1. Look up by email
+  try {
+    const { data } = await supabase.from("usage").select("*").eq("email", email).order("last_used", { ascending: false }).limit(1);
+    if (data && data.length > 0) record = data[0];
+  } catch (e) { console.error("email lookup error:", e.message); }
+
+  // 2. Fall back to fingerprint
+  if (!record && fp) {
+    try {
+      const { data } = await supabase.from("usage").select("*").eq("fingerprint", fp).limit(1);
+      if (data && data.length > 0) {
+        record = data[0];
+        // Attach email to this record
+        try {
+          await supabase.from("usage").update({ email }).eq("fingerprint", fp);
+          record.email = email;
+        } catch (e) { /* email column may not exist yet, that's ok */ }
+      }
+    } catch (e) { console.error("fp lookup error:", e.message); }
+  }
+
+  // 3. Create new record
   if (!record) {
-    const newFp = req.headers["x-fp"] || fingerprint;
-    const { data: inserted } = await supabase
-      .from("usage")
-      .upsert({ fingerprint: newFp, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() }, { onConflict: "fingerprint" })
-      .select()
-      .single();
-    record = inserted || { fingerprint: newFp, email, count: 0, paid: false, plan: "free" };
+    const newFp = fp || "usr_" + Math.random().toString(36).slice(2);
+    try {
+      await supabase.from("usage").upsert(
+        { fingerprint: newFp, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() },
+        { onConflict: "fingerprint" }
+      );
+      // Try to attach email separately (in case column exists)
+      try { await supabase.from("usage").update({ email }).eq("fingerprint", newFp); } catch (_) {}
+    } catch (e) { console.error("insert error:", e.message); }
+    record = { fingerprint: newFp, email, count: 0, paid: false, plan: "free" };
   }
 
   const count = record?.count || 0;
   const paid = record?.paid || false;
   const plan = record?.plan || "free";
   const limit = paid ? (plan === "monthly" ? 15 : 999) : FREE_LIMIT;
-  const allowed = paid || count < FREE_LIMIT;
 
   if (req.method === "GET") {
-    return res.json({ allowed, used: count, limit, paid, plan, isAdmin: false, email });
+    return res.json({ allowed: paid || count < FREE_LIMIT, used: count, limit, paid, plan, isAdmin: false, email });
   }
 
   if (req.method === "POST") {
     const newCount = count + 1;
-    // Update the record we found (by its actual fingerprint)
-    await supabase.from("usage")
-      .update({ count: newCount, last_used: new Date().toISOString() })
-      .eq("fingerprint", record.fingerprint);
+    try {
+      await supabase.from("usage").update({ count: newCount, last_used: new Date().toISOString() }).eq("fingerprint", record.fingerprint);
+    } catch (e) { console.error("increment error:", e.message); }
     return res.json({ count: newCount, paid, plan });
   }
 

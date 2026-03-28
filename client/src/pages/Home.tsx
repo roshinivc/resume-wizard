@@ -79,7 +79,7 @@ function LandingScreen({ onSignIn }: {
     setLoading(true);
     try {
       // Store email and go straight in — usage is tracked server-side by email
-      sessionStorage.setItem("rw_email", email);
+      localStorage.setItem("rw_email", email);
       onSignIn(email);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -174,8 +174,8 @@ function LoginModal({ onClose, onSuccess }: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const fingerprint = (() => {
-    let fp = sessionStorage.getItem("rw_fp");
-    if (!fp) { fp = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("rw_fp", fp); }
+    let fp = localStorage.getItem("rw_fp");
+    if (!fp) { fp = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("rw_fp", fp); }
     return fp;
   })();
 
@@ -196,7 +196,7 @@ function LoginModal({ onClose, onSuccess }: {
       if (!res.ok) throw new Error(data.error || "Failed to send link");
       setSent(true);
       // Optimistically store email so they don't have to wait for the link
-      sessionStorage.setItem("rw_email", email);
+      localStorage.setItem("rw_email", email);
       onSuccess(email);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -532,8 +532,8 @@ export default function Home() {
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
   // Show landing screen for new users (no saved email, no admin token)
   const [showLanding, setShowLanding] = useState(() => {
-    const hasEmail = !!sessionStorage.getItem("rw_email");
-    const hasAdmin = !!sessionStorage.getItem("rw_admin");
+    const hasEmail = !!localStorage.getItem("rw_email");
+    const hasAdmin = !!localStorage.getItem("rw_admin");
     return !hasEmail && !hasAdmin;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -544,7 +544,7 @@ export default function Home() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("admin");
     if (token) {
-      sessionStorage.setItem("rw_admin", token);
+      localStorage.setItem("rw_admin", token);
       setShowLanding(false);
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -561,8 +561,8 @@ export default function Home() {
     let attempts = 0;
     const poll = setInterval(async () => {
       attempts++;
-      const email = sessionStorage.getItem("rw_email") || "";
-      const fp = sessionStorage.getItem("rw_fp") || "";
+      const email = localStorage.getItem("rw_email") || "";
+      const fp = localStorage.getItem("rw_fp") || "";
       const headers: Record<string, string> = { "x-fp": fp };
       if (email) headers["x-email"] = email;
       try {
@@ -581,7 +581,7 @@ export default function Home() {
 
   // Restore email from sessionStorage on load
   useEffect(() => {
-    const savedEmail = sessionStorage.getItem("rw_email");
+    const savedEmail = localStorage.getItem("rw_email");
     if (savedEmail) setLoggedInEmail(savedEmail);
   }, []);
 
@@ -602,9 +602,9 @@ export default function Home() {
           .then(data => {
             if (data?.email) {
               const email = data.email;
-              sessionStorage.setItem("rw_email", email);
+              localStorage.setItem("rw_email", email);
               // Restore old fingerprint if passed via URL
-              if (fp) sessionStorage.setItem("rw_fp", fp);
+              if (fp) localStorage.setItem("rw_fp", fp);
               setLoggedInEmail(email);
               toast({ title: "Signed in!", description: `Welcome back, ${email}` });
               refetchUsage();
@@ -619,10 +619,10 @@ export default function Home() {
 
   // Fingerprint for usage tracking
   const fingerprint = (() => {
-    let fp = sessionStorage.getItem("rw_fp");
+    let fp = localStorage.getItem("rw_fp");
     if (!fp) {
       fp = Math.random().toString(36).slice(2) + Date.now().toString(36);
-      sessionStorage.setItem("rw_fp", fp);
+      localStorage.setItem("rw_fp", fp);
     }
     return fp;
   })();
@@ -631,8 +631,8 @@ export default function Home() {
   const { data: usageStatus, refetch: refetchUsage } = useQuery<UsageStatus>({
     queryKey: ["/api/usage", loggedInEmail],
     queryFn: async () => {
-      const adminToken = sessionStorage.getItem("rw_admin") || "";
-      const email = sessionStorage.getItem("rw_email") || "";
+      const adminToken = localStorage.getItem("rw_admin") || "";
+      const email = localStorage.getItem("rw_email") || "";
       const headers: Record<string, string> = {
         "x-admin-token": adminToken,
         "x-fp": fingerprint,
@@ -660,13 +660,13 @@ export default function Home() {
   // When user signs in via login modal, refetch usage to pick up paid status
   function handleLoginSuccess(email: string) {
     setLoggedInEmail(email);
-    sessionStorage.setItem("rw_email", email);
+    localStorage.setItem("rw_email", email);
     // Refetch after a short delay (give the magic link time to be clicked)
     setTimeout(() => refetchUsage(), 500);
   }
 
   function handleLogout() {
-    sessionStorage.removeItem("rw_email");
+    localStorage.removeItem("rw_email");
     setLoggedInEmail(null);
     setShowLanding(true);
     refetchUsage();
@@ -680,8 +680,8 @@ export default function Home() {
 
   const submitMutation = useMutation({
     mutationFn: (): Promise<AnalysisResult> => new Promise(async (resolve, reject) => {
-      const adminToken = sessionStorage.getItem("rw_admin") || "";
-      const email = sessionStorage.getItem("rw_email") || "";
+      const adminToken = localStorage.getItem("rw_admin") || "";
+      const email = localStorage.getItem("rw_email") || "";
       const headers: Record<string, string> = {
         "x-admin-token": adminToken,
         "x-fp": fingerprint,
