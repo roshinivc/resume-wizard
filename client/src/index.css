@@ -124,34 +124,7 @@
   --ring: 232 75% 70%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #141312;
-    --color-surface: #1c1b19;
-    --color-surface-offset: #222120;
-    --color-surface-dynamic: #2a2928;
-    --color-border: #353432;
-    --color-divider: #2c2b29;
-    --color-text: #d8d7d4;
-    --color-text-muted: #7c7b78;
-    --color-text-faint: #4a4947;
-    --color-primary: #7b8ef0;
-    --color-primary-hover: #8f9ff4;
-    --color-primary-active: #6070e8;
-    --color-primary-highlight: #252a4d;
-    --ring-bg: #2a2928;
-    --background: 40 8% 8%;
-    --foreground: 40 5% 85%;
-    --card: 40 7% 11%;
-    --card-foreground: 40 5% 85%;
-    --border: 40 4% 22%;
-    --input: 40 4% 22%;
-    --primary: 232 75% 70%;
-    --primary-foreground: 232 50% 10%;
-    --muted: 40 5% 18%;
-    --muted-foreground: 40 3% 50%;
-  }
-}
+/* Dark mode controlled by toggle button only */
 
 /* ─── Base reset ────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
