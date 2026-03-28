@@ -93,9 +93,9 @@ export default function About() {
         {/* Feedback section */}
         <h2 className="info-section-title">Share Your Feedback</h2>
         <div className="about-feedback">
-          <p className="about-feedback-sub">Did Resume Wizard help you? Found a bug? Have a suggestion? I'd love to hear from you.</p>
+          <p className="about-feedback-sub">Did Resume Wizard help you? Found a bug? Have a suggestion? 200 words or less is all it takes.</p>
           <a
-            href="mailto:velamuri.roshini@gmail.com?subject=Resume Wizard Feedback"
+            href="mailto:velamuri.roshini@gmail.com?subject=Resume Wizard Feedback&body=Share your feedback in 200 words or less:%0D%0A%0D%0A"
             target="_blank"
             rel="noopener noreferrer"
             className="about-feedback-btn"
