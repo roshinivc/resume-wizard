@@ -1,4 +1,4 @@
-// Usage tracking — fingerprint is the stable key, email is stored but not used for lookup
+// Usage tracking — read-only GET, write on POST
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -27,28 +27,11 @@ export default async function handler(req, res) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  if (!fp) {
-    return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
-  }
-
-  // Look up by fingerprint — stable, always the same from this device
-  const { data: rows, error } = await supabase
-    .from("usage")
-    .select("*")
-    .eq("fingerprint", fp)
-    .limit(1);
-
-  let record = rows && rows.length > 0 ? rows[0] : null;
-
-  // No record — create one
-  if (!record) {
-    const { data: inserted, error: ie } = await supabase
-      .from("usage")
-      .insert({ fingerprint: fp, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() })
-      .select()
-      .single();
-    console.log("Created:", fp, ie?.message || "ok");
-    record = inserted || { fingerprint: fp, email, count: 0, paid: false, plan: "free" };
+  // Read record by fingerprint — do NOT create if missing
+  let record = null;
+  if (fp) {
+    const { data } = await supabase.from("usage").select("*").eq("fingerprint", fp).limit(1);
+    if (data && data.length > 0) record = data[0];
   }
 
   const count = record?.count || 0;
@@ -61,12 +44,16 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const newCount = count + 1;
-    await supabase.from("usage")
-      .update({ count: newCount, last_used: new Date().toISOString() })
-      .eq("fingerprint", fp);
-    console.log("Incremented:", fp, "to", newCount);
-    return res.json({ count: newCount, paid, plan });
+    if (record) {
+      // Update existing
+      const newCount = count + 1;
+      await supabase.from("usage").update({ count: newCount, last_used: new Date().toISOString() }).eq("fingerprint", fp);
+      return res.json({ count: newCount, paid, plan });
+    } else {
+      // Create new with count 1
+      await supabase.from("usage").insert({ fingerprint: fp, email, count: 1, paid: false, plan: "free", last_used: new Date().toISOString() });
+      return res.json({ count: 1, paid: false, plan: "free" });
+    }
   }
 
   return res.status(405).json({ error: "Method not allowed" });
