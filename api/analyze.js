@@ -24,27 +24,27 @@ async function extractText(buffer, mimetype, filename) {
   throw new Error("Unsupported file type. Please upload a PDF, DOCX, or TXT.");
 }
 
-async function incrementUsage(fingerprint, email) {
-  if (!fingerprint) return;
-  // Always update by fingerprint — same key usage.js uses
-  const { data: rows } = await supabase.from("usage")
-    .select("fingerprint, count")
-    .eq("fingerprint", fingerprint)
-    .limit(1);
+// Same hash as usage.js — email always maps to same fingerprint
+function emailToFp(email) {
+  let hash = 5381;
+  for (let i = 0; i < email.length; i++) {
+    hash = ((hash << 5) + hash) + email.charCodeAt(i);
+    hash |= 0;
+  }
+  return "em_" + Math.abs(hash).toString(36);
+}
+
+async function incrementUsage(email) {
+  if (!email) return;
+  const fp = emailToFp(email);
+
+  const { data: rows } = await supabase.from("usage").select("fingerprint, count").eq("fingerprint", fp).limit(1);
 
   if (rows && rows.length > 0) {
     const rec = rows[0];
-    await supabase.from("usage")
-      .update({ count: (rec.count || 0) + 1, last_used: new Date().toISOString() })
-      .eq("fingerprint", fingerprint);
-    console.log("incremented:", fingerprint, "to", (rec.count || 0) + 1);
+    await supabase.from("usage").update({ count: (rec.count || 0) + 1, last_used: new Date().toISOString() }).eq("fingerprint", fp);
   } else {
-    // Record not yet created by usage.js GET — create it
-    await supabase.from("usage").insert({
-      fingerprint, email, count: 1, paid: false, plan: "free",
-      last_used: new Date().toISOString()
-    });
-    console.log("created + incremented:", fingerprint);
+    await supabase.from("usage").insert({ fingerprint: fp, email, count: 1, paid: false, plan: "free", last_used: new Date().toISOString() });
   }
 }
 
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
     if (!parsed.score || !parsed.sections) throw new Error("Incomplete analysis. Please try again.");
 
     // Increment usage server-side
-    if (!isAdmin) await incrementUsage(fingerprint, emailHeader);
+    if (!isAdmin) await incrementUsage(emailHeader);
 
     clearInterval(ping);
     res.write(`event: result\ndata: ${JSON.stringify({

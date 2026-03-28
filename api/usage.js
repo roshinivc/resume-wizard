@@ -1,4 +1,4 @@
-// Usage tracking — read-only GET, write on POST
+// Usage tracking — email is the identity, fingerprint derived from email
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -7,6 +7,16 @@ const supabase = createClient(
 );
 
 const FREE_LIMIT = 3;
+
+// Derive a stable fingerprint from email — same email always = same record
+function emailToFp(email) {
+  let hash = 5381;
+  for (let i = 0; i < email.length; i++) {
+    hash = ((hash << 5) + hash) + email.charCodeAt(i);
+    hash |= 0;
+  }
+  return "em_" + Math.abs(hash).toString(36);
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -21,18 +31,17 @@ export default async function handler(req, res) {
   }
 
   const email = req.headers["x-email"] || null;
-  const fp = req.headers["x-fp"] || null;
 
   if (!email) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  // Read record by fingerprint — do NOT create if missing
-  let record = null;
-  if (fp) {
-    const { data } = await supabase.from("usage").select("*").eq("fingerprint", fp).limit(1);
-    if (data && data.length > 0) record = data[0];
-  }
+  // Stable fingerprint derived from email — same across all devices/browsers
+  const fp = emailToFp(email);
+
+  // Read record
+  const { data } = await supabase.from("usage").select("*").eq("fingerprint", fp).limit(1);
+  let record = data && data.length > 0 ? data[0] : null;
 
   const count = record?.count || 0;
   const paid = record?.paid || false;
@@ -45,12 +54,10 @@ export default async function handler(req, res) {
 
   if (req.method === "POST") {
     if (record) {
-      // Update existing
       const newCount = count + 1;
       await supabase.from("usage").update({ count: newCount, last_used: new Date().toISOString() }).eq("fingerprint", fp);
       return res.json({ count: newCount, paid, plan });
     } else {
-      // Create new with count 1
       await supabase.from("usage").insert({ fingerprint: fp, email, count: 1, paid: false, plan: "free", last_used: new Date().toISOString() });
       return res.json({ count: 1, paid: false, plan: "free" });
     }
