@@ -1748,3 +1748,115 @@ button { cursor: pointer; background: none; border: none; }
 .about-links a { color: var(--color-text-muted); text-decoration: none; transition: color .15s; }
 .about-links a:hover { color: var(--color-primary); }
 .about-links span { color: var(--color-text-faint); }
+
+/* ─── Feedback Modal ─────────────────────────────────────────────────────────── */
+.feedback-modal-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn .18s ease;
+}
+.feedback-modal {
+  position: relative;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  max-width: 460px; width: 100%;
+  box-shadow: 0 24px 64px rgba(0,0,0,.15);
+  display: flex; flex-direction: column; gap: var(--space-3);
+  animation: scaleIn .2s cubic-bezier(0.16,1,0.3,1);
+}
+.feedback-modal-close {
+  position: absolute; top: var(--space-4); right: var(--space-4);
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: var(--color-surface-offset);
+  color: var(--color-text-muted); border-radius: var(--radius-full);
+  cursor: pointer; transition: all var(--transition-interactive);
+}
+.feedback-modal-close:hover { background: var(--color-border); color: var(--color-text); }
+.feedback-modal-title {
+  font-size: var(--text-base); font-weight: 800;
+  color: var(--color-text); text-align: center;
+}
+.feedback-modal-sub {
+  font-size: var(--text-sm); color: var(--color-text-muted);
+  text-align: center; line-height: 1.5;
+}
+.feedback-stars {
+  display: flex; justify-content: center; gap: var(--space-2);
+  margin: var(--space-1) 0;
+}
+.feedback-star {
+  background: none; border: none; cursor: pointer; padding: 2px;
+  color: var(--color-text-faint);
+  transition: color var(--transition-interactive), transform .1s;
+}
+.feedback-star:hover, .feedback-star--active { color: #f59e0b; }
+.feedback-star:hover { transform: scale(1.15); }
+.feedback-star--active svg { fill: #f59e0b; }
+.feedback-input {
+  width: 100%; padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm); font-family: inherit;
+  background: var(--color-bg); border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md); color: var(--color-text); outline: none;
+  transition: border-color var(--transition-interactive);
+}
+.feedback-input:focus { border-color: #1e3a5f; }
+.feedback-textarea {
+  width: 100%; padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm); font-family: inherit;
+  background: var(--color-bg); border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md); color: var(--color-text); outline: none;
+  resize: vertical; min-height: 100px;
+  transition: border-color var(--transition-interactive);
+}
+.feedback-textarea:focus { border-color: #1e3a5f; }
+.feedback-wordcount {
+  font-size: var(--text-xs); color: var(--color-text-faint);
+  text-align: right; margin-top: -var(--space-2);
+}
+.feedback-error { font-size: var(--text-xs); color: var(--color-error); }
+.feedback-submit-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: var(--space-3);
+  background: #1e3a5f; color: #fff;
+  border: none; border-radius: var(--radius-md);
+  font-size: var(--text-sm); font-weight: 700;
+  cursor: pointer; transition: opacity .2s, transform .1s;
+  margin-top: var(--space-1);
+}
+.feedback-submit-btn:hover { opacity: .85; transform: translateY(-1px); }
+.feedback-submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.feedback-done {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-3); text-align: center; padding: var(--space-4) 0;
+}
+.feedback-done-icon { color: var(--color-success); }
+
+/* ─── Review Cards ───────────────────────────────────────────────────────────── */
+.reviews-list {
+  display: flex; flex-direction: column; gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.review-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+}
+.review-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: var(--space-2);
+}
+.review-name { font-size: var(--text-sm); font-weight: 700; color: var(--color-text); }
+.review-stars { display: flex; gap: 2px; }
+.star-filled { color: #f59e0b; fill: #f59e0b; }
+.star-empty { color: var(--color-border); }
+.review-text {
+  font-size: var(--text-sm); color: var(--color-text-muted);
+  line-height: 1.65;
+}

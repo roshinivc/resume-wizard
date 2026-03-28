@@ -1,9 +1,30 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, Linkedin, ExternalLink } from "lucide-react";
+import { ArrowLeft, Linkedin, ExternalLink, Star } from "lucide-react";
+import FeedbackModal from "@/components/FeedbackModal";
+import { API_BASE } from "@/lib/queryClient";
+
+interface Review {
+  name: string;
+  rating: number;
+  review: string;
+  created_at: string;
+}
 
 export default function About() {
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/feedback`)
+      .then(r => r.json())
+      .then(d => { if (d.reviews) setReviews(d.reviews); })
+      .catch(() => {});
+  }, [showFeedback]);
+
   return (
     <div className="info-page">
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
       <div className="info-page-inner">
 
         {/* Back */}
@@ -91,19 +112,33 @@ export default function About() {
         </div>
 
         {/* Feedback section */}
-        <h2 className="info-section-title">Share Your Feedback</h2>
+        <h2 className="info-section-title">Reviews</h2>
         <div className="about-feedback">
-          <p className="about-feedback-sub">Did Resume Wizard help you? Found a bug? Have a suggestion? 200 words or less is all it takes.</p>
-          <a
-            href="mailto:velamuri.roshini@gmail.com?subject=Resume Wizard Feedback&body=Share your feedback in 200 words or less:%0D%0A%0D%0A"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="about-feedback-btn"
-          >
-            Leave Feedback
-          </a>
-          <p className="about-feedback-alt">Or reach me directly on <a href="https://www.linkedin.com/in/roshiniv" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
+          <p className="about-feedback-sub">Did Resume Wizard help with your job search? Leave a quick review — 200 words or less.</p>
+          <button className="about-feedback-btn" onClick={() => setShowFeedback(true)}>
+            Leave a Review
+          </button>
+          <p className="about-feedback-alt">Or reach me on <a href="https://www.linkedin.com/in/roshiniv" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
         </div>
+
+        {/* Reviews list */}
+        {reviews.length > 0 && (
+          <div className="reviews-list">
+            {reviews.map((r, i) => (
+              <div key={i} className="review-card">
+                <div className="review-header">
+                  <span className="review-name">{r.name}</span>
+                  <div className="review-stars">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={14} className={s <= r.rating ? "star-filled" : "star-empty"} />
+                    ))}
+                  </div>
+                </div>
+                <p className="review-text">{r.review}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Tech note */}
         <div className="about-tech">
