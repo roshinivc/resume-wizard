@@ -19,7 +19,7 @@ export default function About() {
             <img src="/logo.png" alt="Resume Wizard" className="about-logo" />
           </div>
           <div className="about-story-body">
-            <h2 className="about-name">Built by Roshini Velamuri</h2>
+            <h2 className="about-name">Built by Roshini V.</h2>
             <p className="about-role">Senior Program Manager · AI &amp; Product Enthusiast</p>
             <p className="about-bio">
               Job hunting is exhausting. You spend hours tailoring resumes, writing cover letters,
@@ -88,6 +88,21 @@ export default function About() {
               <p>Your resume is processed and discarded — nothing is stored after the analysis. Only your usage count is tracked (by email) to enforce the free tier.</p>
             </div>
           </div>
+        </div>
+
+        {/* Feedback section */}
+        <h2 className="info-section-title">Share Your Feedback</h2>
+        <div className="about-feedback">
+          <p className="about-feedback-sub">Did Resume Wizard help you? Found a bug? Have a suggestion? I'd love to hear from you.</p>
+          <a
+            href="mailto:velamuri.roshini@gmail.com?subject=Resume Wizard Feedback"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="about-feedback-btn"
+          >
+            Leave Feedback
+          </a>
+          <p className="about-feedback-alt">Or reach me directly on <a href="https://www.linkedin.com/in/roshiniv" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
         </div>
 
         {/* Tech note */}
