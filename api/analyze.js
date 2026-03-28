@@ -25,42 +25,27 @@ async function extractText(buffer, mimetype, filename) {
 }
 
 async function incrementUsage(fingerprint, email) {
-  // Update by email — single source of truth
+  if (!fingerprint) return;
+  // Always update by fingerprint — same key usage.js uses
   const { data: rows } = await supabase.from("usage")
     .select("fingerprint, count")
-    .eq("email", email)
-    .order("last_used", { ascending: false })
+    .eq("fingerprint", fingerprint)
     .limit(1);
 
   if (rows && rows.length > 0) {
     const rec = rows[0];
-    const { error } = await supabase.from("usage")
+    await supabase.from("usage")
       .update({ count: (rec.count || 0) + 1, last_used: new Date().toISOString() })
-      .eq("fingerprint", rec.fingerprint);
-    console.log("analyze: incremented", email, "to", (rec.count || 0) + 1, error?.message || "ok");
-    return;
+      .eq("fingerprint", fingerprint);
+    console.log("incremented:", fingerprint, "to", (rec.count || 0) + 1);
+  } else {
+    // Record not yet created by usage.js GET — create it
+    await supabase.from("usage").insert({
+      fingerprint, email, count: 1, paid: false, plan: "free",
+      last_used: new Date().toISOString()
+    });
+    console.log("created + incremented:", fingerprint);
   }
-
-  // Fall back to fingerprint
-  if (fingerprint) {
-    const { data: fpRows } = await supabase.from("usage")
-      .select("fingerprint, count")
-      .eq("fingerprint", fingerprint)
-      .limit(1);
-    if (fpRows && fpRows.length > 0) {
-      const rec = fpRows[0];
-      await supabase.from("usage")
-        .update({ count: (rec.count || 0) + 1, last_used: new Date().toISOString(), email })
-        .eq("fingerprint", fingerprint);
-      console.log("analyze: incremented by fp", fingerprint);
-      return;
-    }
-  }
-
-  // Create new
-  const newFp = fingerprint || ("a_" + Math.random().toString(36).slice(2));
-  await supabase.from("usage").insert({ fingerprint: newFp, email, count: 1, paid: false, plan: "free", last_used: new Date().toISOString() });
-  console.log("analyze: created new record", newFp, email);
 }
 
 // Minimal prompt — every token saved = faster response

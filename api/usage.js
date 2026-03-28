@@ -1,4 +1,4 @@
-// Usage tracking — single source of truth
+// Usage tracking — fingerprint is the stable key, email is stored but not used for lookup
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -27,40 +27,28 @@ export default async function handler(req, res) {
     return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
   }
 
-  // Always look up by EMAIL first — canonical cross-device key
-  const { data: rows, error: lookupErr } = await supabase
+  if (!fp) {
+    return res.json({ allowed: false, requiresEmail: true, used: 0, limit: FREE_LIMIT, paid: false, plan: "free", isAdmin: false, email: null });
+  }
+
+  // Look up by fingerprint — stable, always the same from this device
+  const { data: rows, error } = await supabase
     .from("usage")
     .select("*")
-    .eq("email", email)
-    .order("last_used", { ascending: false })
+    .eq("fingerprint", fp)
     .limit(1);
-
-  console.log("Lookup by email:", email, "rows:", rows?.length, "err:", lookupErr?.message);
 
   let record = rows && rows.length > 0 ? rows[0] : null;
 
-  // No email record — check fingerprint
-  if (!record && fp) {
-    const { data: fpRows } = await supabase.from("usage").select("*").eq("fingerprint", fp).limit(1);
-    if (fpRows && fpRows.length > 0) {
-      record = fpRows[0];
-      // Attach email to this record
-      await supabase.from("usage").update({ email }).eq("fingerprint", fp);
-      record.email = email;
-      console.log("Found by fp, attached email");
-    }
-  }
-
-  // Still nothing — create new record
+  // No record — create one
   if (!record) {
-    const newFp = fp || ("u_" + Math.random().toString(36).slice(2));
-    const { data: inserted, error: insertErr } = await supabase
+    const { data: inserted, error: ie } = await supabase
       .from("usage")
-      .insert({ fingerprint: newFp, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() })
+      .insert({ fingerprint: fp, email, count: 0, paid: false, plan: "free", last_used: new Date().toISOString() })
       .select()
       .single();
-    console.log("Created new record:", newFp, "err:", insertErr?.message);
-    record = inserted || { fingerprint: newFp, email, count: 0, paid: false, plan: "free" };
+    console.log("Created:", fp, ie?.message || "ok");
+    record = inserted || { fingerprint: fp, email, count: 0, paid: false, plan: "free" };
   }
 
   const count = record?.count || 0;
@@ -73,13 +61,11 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    // Increment using email as key (consistent)
     const newCount = count + 1;
-    const { error: updateErr } = await supabase
-      .from("usage")
+    await supabase.from("usage")
       .update({ count: newCount, last_used: new Date().toISOString() })
-      .eq("email", email);
-    console.log("Incremented to", newCount, "err:", updateErr?.message);
+      .eq("fingerprint", fp);
+    console.log("Incremented:", fp, "to", newCount);
     return res.json({ count: newCount, paid, plan });
   }
 
