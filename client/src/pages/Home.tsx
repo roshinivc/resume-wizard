@@ -81,7 +81,8 @@ function LandingScreen({ onSignIn }: {
   return (
     <div className="landing-screen">
       <div className="landing-inner">
-        {/* Logo + headline */}
+
+        {/* Logo */}
         <div className="landing-logo-row">
           <img src="/logo.png" alt="Resume Wizard" className="landing-logo" />
           <div>
@@ -90,77 +91,33 @@ function LandingScreen({ onSignIn }: {
           </div>
         </div>
 
-        <h2 className="landing-headline">Know your exact match score<br/>before you hit apply.</h2>
-        <p className="landing-sub">Upload your resume, paste a job description. Get a score out of 10, honest corrections, and a tailored cover letter — in seconds.</p>
+        <p className="landing-sub">Score your resume against any job description. 3 free analyses — no credit card needed.</p>
 
-        {/* Free badge */}
-        <div className="landing-free-badge">
-          <CheckCircle2 size={14} />
-          <span><strong>3 free analyses</strong> included — no credit card required</span>
+        {/* Email input */}
+        <div className="landing-input-row">
+          <input
+            className="landing-input"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSend()}
+            autoFocus
+            data-testid="input-landing-email"
+          />
+          <button
+            className="landing-btn"
+            onClick={handleSend}
+            disabled={loading}
+            data-testid="button-landing-signin"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : null}
+            {loading ? "Starting…" : "Start Free →"}
+          </button>
         </div>
+        {error && <p className="landing-error">{error}</p>}
+        <p className="landing-required-note">Your usage is tracked by email so it works across all your devices.</p>
 
-        {/* Sign-in card */}
-        <div className="landing-card">
-          {!sent ? (
-            <>
-              <p className="landing-card-title">Enter your email to get started</p>
-              <p className="landing-card-sub">No password needed. Your 3 free analyses are tied to your email — works on any device.</p>
-              <div className="landing-input-row">
-                <input
-                  className="landing-input"
-                  type="email"
-                  placeholder="you@email.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSend()}
-                  autoFocus
-                  data-testid="input-landing-email"
-                />
-                <button
-                  className="landing-btn"
-                  onClick={handleSend}
-                  disabled={loading}
-                  data-testid="button-landing-signin"
-                >
-                  {loading ? <Loader2 size={15} className="animate-spin" /> : <Mail size={15} />}
-                  {loading ? "Starting…" : "Get Free Access →"}
-                </button>
-              </div>
-              {error && <p className="landing-error">{error}</p>}
-              <p className="landing-required-note">
-                Email is required to track your 3 free analyses across all your devices.
-              </p>
-            </>
-          ) : (
-            <div className="landing-sent">
-              <CheckCircle2 size={36} className="landing-sent-icon" />
-              <p className="landing-sent-title">Magic link sent to <strong>{email}</strong></p>
-              <p className="landing-sent-sub">Check your inbox and click the link. You can also start analyzing now — your session is saved.</p>
-              <button className="landing-btn" style={{marginTop:"var(--space-4)"}} onClick={onSkip}>
-                Continue to app →
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Pricing summary */}
-        <div className="landing-plans">
-          <div className="landing-plan">
-            <div className="landing-plan-name">Free</div>
-            <div className="landing-plan-price">$0</div>
-            <div className="landing-plan-desc">3 analyses · Score + feedback</div>
-          </div>
-          <div className="landing-plan landing-plan--featured">
-            <div className="landing-plan-name">Pay As You Go</div>
-            <div className="landing-plan-price">$0.99<span>/analysis</span></div>
-            <div className="landing-plan-desc">All 5 tabs · No subscription</div>
-          </div>
-          <div className="landing-plan">
-            <div className="landing-plan-name">Monthly</div>
-            <div className="landing-plan-price">$5.99<span>/mo</span></div>
-            <div className="landing-plan-desc">15 analyses · Cancel anytime</div>
-          </div>
-        </div>
       </div>
     </div>
   );
