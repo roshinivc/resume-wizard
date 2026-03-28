@@ -80,45 +80,75 @@ function LandingScreen({ onSignIn }: {
 
   return (
     <div className="landing-screen">
-      <div className="landing-inner">
 
-        {/* Logo */}
+      {/* Top bar */}
+      <div className="landing-topbar">
         <div className="landing-logo-row">
           <img src="/logo.png" alt="Resume Wizard" className="landing-logo" />
-          <div>
-            <h1 className="landing-title">Resume Wizard</h1>
-            <p className="landing-tagline">Built by a job seeker, for job seekers</p>
+          <h1 className="landing-title">Resume Wizard</h1>
+        </div>
+        <div className="landing-bottom-links">
+          <Link href="/how-to-use" className="landing-bottom-link">How to Use</Link>
+          <Link href="/about" className="landing-bottom-link">About</Link>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="landing-inner">
+
+        {/* Left */}
+        <div className="landing-left">
+          <p className="landing-eyebrow">AI Resume Analyzer</p>
+          <h2 className="landing-headline">Know your score before you apply.</h2>
+          <p className="landing-sub">Upload your resume, paste a job description. Get an honest match score, targeted corrections, and a tailored cover letter in seconds.</p>
+          <div className="landing-features">
+            <div className="landing-feature"><span className="landing-feature-dot" />3 free analyses included</div>
+            <div className="landing-feature"><span className="landing-feature-dot" />Score out of 10 with honest feedback</div>
+            <div className="landing-feature"><span className="landing-feature-dot" />Corrections, cover letter, manager note</div>
+            <div className="landing-feature"><span className="landing-feature-dot" />Works on any device</div>
           </div>
         </div>
 
-        <p className="landing-sub">Score your resume against any job description. 3 free analyses — no credit card needed.</p>
-
-        {/* Email input */}
-        <div className="landing-input-row">
-          <input
-            className="landing-input"
-            type="email"
-            placeholder="your@email.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSend()}
-            autoFocus
-            data-testid="input-landing-email"
-          />
-          <button
-            className="landing-btn"
-            onClick={handleSend}
-            disabled={loading}
-            data-testid="button-landing-signin"
-          >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : null}
-            {loading ? "Starting…" : "Start Free →"}
-          </button>
+        {/* Right — form */}
+        <div className="landing-right">
+          <p className="landing-form-title">Get started free</p>
+          <p className="landing-form-sub">Enter your email. No password, no credit card.</p>
+          <div className="landing-input-row">
+            <input
+              className="landing-input"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSend()}
+              autoFocus
+              data-testid="input-landing-email"
+            />
+            {error && <p className="landing-error">{error}</p>}
+            <button
+              className="landing-btn"
+              onClick={handleSend}
+              disabled={loading}
+              data-testid="button-landing-signin"
+            >
+              {loading ? <Loader2 size={15} className="animate-spin" /> : null}
+              {loading ? "Starting…" : "Start Free →"}
+            </button>
+          </div>
+          <p className="landing-required-note">Your 3 free analyses are tied to your email — works across all your devices.</p>
         </div>
-        {error && <p className="landing-error">{error}</p>}
-        <p className="landing-required-note">Your usage is tracked by email so it works across all your devices.</p>
 
       </div>
+
+      {/* Bottom bar */}
+      <div className="landing-bottombar">
+        <p className="landing-bottom-note">Built by a job seeker, for job seekers</p>
+        <div className="landing-bottom-links">
+          <a href="https://roshinivc.github.io/resume-wizard/privacy.html" target="_blank" rel="noopener noreferrer" className="landing-bottom-link">Privacy</a>
+          <a href="https://roshinivc.github.io/resume-wizard/terms.html" target="_blank" rel="noopener noreferrer" className="landing-bottom-link">Terms</a>
+        </div>
+      </div>
+
     </div>
   );
 }
