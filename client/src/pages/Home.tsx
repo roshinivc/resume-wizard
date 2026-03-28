@@ -526,7 +526,7 @@ export default function Home() {
   const [jobDesc, setJobDesc] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
-  const [darkMode, setDarkMode] = useState(window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const [darkMode, setDarkMode] = useState(false); // Default light mode
   const [showPaywall, setShowPaywall] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
