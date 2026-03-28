@@ -816,10 +816,6 @@ export default function Home() {
               <p className="logo-tagline">Built by a job seeker, for job seekers — honest AI feedback that respects your time.</p>
             </div>
           </div>
-          <nav className="header-nav">
-            <Link href="/how-to-use" className="header-nav-link">How to Use</Link>
-            <Link href="/about" className="header-nav-link">About</Link>
-          </nav>
           <div className="header-right">
             {/* Logged-in user display */}
             {loggedInEmail && (
