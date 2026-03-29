@@ -172,7 +172,7 @@ export default function Corporate() {
             </div>
           </div>
           <a
-            href="https://github.com/roshinivc/hirescreen-exe/releases/latest"
+            href="https://github.com/roshinivc/hirescreen-exe/releases/tag/v1.0-trial"
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -295,7 +295,7 @@ export default function Corporate() {
                 In the meantime, download the free trial to get started.
               </div>
               <a
-                href="https://github.com/roshinivc/hirescreen-exe/releases/latest"
+                href="https://github.com/roshinivc/hirescreen-exe/releases/tag/v1.0-trial"
                 target="_blank" rel="noopener noreferrer"
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.4rem",
