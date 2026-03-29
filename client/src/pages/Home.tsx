@@ -100,6 +100,7 @@ function LandingScreen({ onSignIn }: {
         <div className="landing-bottom-links">
           <Link href="/how-to-use" className="landing-bottom-link">How to Use</Link>
           <Link href="/about" className="landing-bottom-link">About</Link>
+          <Link href="/corporate" className="landing-bottom-link" style={{ fontWeight: 700, color: "var(--color-primary)" }}>For Companies</Link>
         </div>
       </div>
 
@@ -858,6 +859,10 @@ export default function Home() {
                 Admin
               </span>
             )}
+            <Link href="/corporate" className="landing-bottom-link" style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--color-primary)" }}>
+              <Briefcase size={13} style={{ display: "inline", marginRight: 4 }} />
+              For Companies
+            </Link>
             <button className="theme-toggle" onClick={() => setDarkMode(d => !d)} aria-label="Toggle dark mode">
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
