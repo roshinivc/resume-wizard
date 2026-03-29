@@ -65,6 +65,7 @@ const FEATURES = [
   { icon: <FileText size={15} />, label: "Excel + PDF reports per job, per score tier" },
   { icon: <Shield size={15} />,   label: "100% local — no resume data leaves your machine" },
   { icon: <CheckCircle2 size={15} />, label: "Works with local folders, OneDrive, SharePoint, Google Drive, Dropbox" },
+  { icon: <CheckCircle2 size={15} />, label: "Runs on Windows & Mac — no browser or internet required after setup" },
 ];
 
 interface FormData {
@@ -168,7 +169,7 @@ export default function Corporate() {
               Start with a free trial
             </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.825rem", marginTop: 2 }}>
-              Download HireScreen.exe — process 2 job reqs free, up to 100 resumes each. No credit card.
+              Works on Windows & Mac. Process 2 job reqs free, up to 100 resumes each. No credit card.
             </div>
           </div>
           <a
