@@ -168,7 +168,7 @@ export default function Corporate() {
               Start with a free trial
             </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: "0.825rem", marginTop: 2 }}>
-              Download HireScreen.exe — process 2 job reqs free, unlimited resumes. No credit card.
+              Download HireScreen.exe — process 2 job reqs free, up to 100 resumes each. No credit card.
             </div>
           </div>
           <a
