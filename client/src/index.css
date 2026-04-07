@@ -1860,3 +1860,142 @@ button { cursor: pointer; background: none; border: none; }
   font-size: var(--text-sm); color: var(--color-text-muted);
   line-height: 1.65;
 }
+
+/* ─── Mobile Responsive Fixes ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Landing page topbar — stack logo + hide nav on very small screens */
+  .landing-topbar {
+    padding: 14px 16px;
+    flex-wrap: nowrap;
+  }
+  .landing-topbar .landing-bottom-links {
+    gap: 6px;
+  }
+  .landing-bottom-link {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  /* Landing main — single column */
+  .landing-inner {
+    grid-template-columns: 1fr !important;
+    padding: 32px 20px !important;
+    gap: 28px !important;
+  }
+  .landing-headline {
+    font-size: 1.8rem !important;
+  }
+  .landing-right {
+    padding: 24px 20px;
+  }
+  .landing-bottombar {
+    padding: 16px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* App header — hide tagline, compress */
+  .logo-tagline {
+    display: none;
+  }
+  .logo-name {
+    font-size: var(--text-sm) !important;
+  }
+  .logo-img {
+    width: 40px !important;
+    height: 40px !important;
+  }
+  .site-header .header-inner {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .header-right {
+    gap: 6px;
+  }
+  .header-user-email {
+    max-width: 100px;
+    font-size: 10px;
+  }
+  .usage-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  .header-subscribe-btn {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+
+  /* Analyzer inputs — single column */
+  .input-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-4) !important;
+  }
+
+  /* Result tabs — scroll horizontally */
+  .result-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px;
+  }
+  .result-tabs::-webkit-scrollbar { display: none; }
+  .result-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Score hero — stack */
+  .score-hero {
+    flex-direction: column !important;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-4) !important;
+  }
+
+  /* Correction card — stack before/after vertically */
+  .correction-row {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .correction-arrow { display: none; }
+
+  /* Feedback grid — single column */
+  .feedback-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Info pages padding */
+  .info-page { padding: var(--space-4) var(--space-4); }
+  .info-page-inner { max-width: 100%; }
+  .info-pricing-bar {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .info-pricing-divider { display: none; }
+
+  /* Paywall options — single column */
+  .paywall-options {
+    flex-direction: column !important;
+    gap: var(--space-4) !important;
+  }
+
+  /* Login modal */
+  .login-modal {
+    padding: var(--space-6) var(--space-4) var(--space-4);
+  }
+}
+
+/* Medium screens (tablet) */
+@media (max-width: 900px) and (min-width: 641px) {
+  .landing-inner {
+    grid-template-columns: 1fr 1fr;
+    padding: 48px 32px;
+    gap: 40px;
+  }
+  .landing-headline { font-size: 2rem; }
+  .input-grid { grid-template-columns: 1fr; }
+  .result-tabs { flex-wrap: wrap; }
+}
