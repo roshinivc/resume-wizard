@@ -2004,65 +2004,68 @@ button { cursor: pointer; background: none; border: none; }
   .result-tabs { flex-wrap: wrap; }
 }
 
-/* ─── ATS Score ──────────────────────────────────────────────────────────────── */
-.ats-score-wrap {
+/* ─── ATS Score Section ──────────────────────────────────────────────────────── */
+.ats-section {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 120px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
-.ats-score-ring {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 6px solid var(--color-border);
+.ats-section-header { display: flex; align-items: center; }
+.ats-score-badge {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-direction: row;
-  gap: 1px;
-  position: relative;
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
-.ats-score-ring--good { border-color: #22c55e; }
-.ats-score-ring--mid  { border-color: #f59e0b; }
-.ats-score-ring--poor { border-color: #ef4444; }
-.ats-score-val {
-  font-size: 1.5rem;
+.ats-badge-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--color-text-muted);
+}
+.ats-badge-val {
+  font-size: 1.4rem;
   font-weight: 800;
-  color: var(--color-text);
   line-height: 1;
 }
-.ats-score-ring--good .ats-score-val { color: #22c55e; }
-.ats-score-ring--mid  .ats-score-val { color: #f59e0b; }
-.ats-score-ring--poor .ats-score-val { color: #ef4444; }
-.ats-score-pct {
-  font-size: 0.75rem;
+.ats-score-badge--good .ats-badge-val { color: #22c55e; }
+.ats-score-badge--mid  .ats-badge-val { color: #f59e0b; }
+.ats-score-badge--poor .ats-badge-val { color: #ef4444; }
+.ats-badge-status {
+  font-size: var(--text-xs);
   font-weight: 600;
-  color: var(--color-text-muted);
-  align-self: flex-end;
-  margin-bottom: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
 }
+.ats-score-badge--good .ats-badge-status { background: rgba(34,197,94,.1); color: #22c55e; border: 1px solid rgba(34,197,94,.2); }
+.ats-score-badge--mid  .ats-badge-status { background: rgba(245,158,11,.1); color: #f59e0b; border: 1px solid rgba(245,158,11,.2); }
+.ats-score-badge--poor .ats-badge-status { background: rgba(239,68,68,.1);  color: #ef4444; border: 1px solid rgba(239,68,68,.2); }
 .ats-issues {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  max-width: 220px;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
 }
 .ats-issue-item {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  font-size: var(--text-xs);
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .ats-issue-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #f59e0b;
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 6px;
 }

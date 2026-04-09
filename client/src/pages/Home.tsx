@@ -914,28 +914,6 @@ export default function Home() {
                 <ScoreRing score={result.score} />
                 <p className="score-label">Match Score</p>
               </div>
-              {/* ATS Score */}
-              {result.atsScore !== undefined && (
-                <div className="ats-score-wrap">
-                  <div className={`ats-score-ring ${
-                    result.atsScore >= 75 ? "ats-score-ring--good" :
-                    result.atsScore >= 50 ? "ats-score-ring--mid" : "ats-score-ring--poor"
-                  }`}>
-                    <span className="ats-score-val">{result.atsScore}</span>
-                    <span className="ats-score-pct">%</span>
-                  </div>
-                  <p className="score-label">ATS Score</p>
-                  {result.atsIssues && result.atsIssues.length > 0 && (
-                    <div className="ats-issues">
-                      {result.atsIssues.map((issue, i) => (
-                        <div key={i} className="ats-issue-item">
-                          <span className="ats-issue-dot" />  {issue}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="score-rationale">
                 <h2 className="score-heading">
                   {result.score >= 8 ? "Great match" : result.score >= 6 ? "Solid foundation" : "Room to improve"}
@@ -946,6 +924,34 @@ export default function Home() {
                 </Button>
               </div>
             </div>
+
+            {/* ATS Score — separate section below */}
+            {result.atsScore !== undefined && (
+              <div className="ats-section">
+                <div className="ats-section-header">
+                  <div className={`ats-score-badge ${
+                    result.atsScore >= 75 ? "ats-score-badge--good" :
+                    result.atsScore >= 50 ? "ats-score-badge--mid" : "ats-score-badge--poor"
+                  }`}>
+                    <span className="ats-badge-label">ATS Compatibility</span>
+                    <span className="ats-badge-val">{result.atsScore}%</span>
+                    <span className="ats-badge-status">
+                      {result.atsScore >= 75 ? "Likely to pass" : result.atsScore >= 50 ? "Needs improvement" : "High risk of rejection"}
+                    </span>
+                  </div>
+                </div>
+                {result.atsIssues && result.atsIssues.length > 0 && (
+                  <div className="ats-issues">
+                    {result.atsIssues.map((issue, i) => (
+                      <div key={i} className="ats-issue-item">
+                        <span className="ats-issue-dot" />
+                        <span>{issue}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="result-tabs">
