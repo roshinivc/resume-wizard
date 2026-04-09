@@ -747,31 +747,41 @@ export default function Home() {
       // Read full response as text (Vercel buffers SSE anyway)
       const text = await res.text();
 
-      // Parse SSE: find data: lines after event: result
-      // The data may be very long — collect all data: lines after the result event
-      let lastResult = null;
-      let lastError = null;
-
-      // Split on double newline (SSE event separator)
-      const events = text.split("\n\n");
-      for (const event of events) {
-        const eventLine = event.split("\n").find(l => l.startsWith("event:"));
-        // Collect ALL data: lines and join them (in case data spans multiple lines)
-        const dataLines = event.split("\n").filter(l => l.startsWith("data:"));
-        if (!dataLines.length) continue;
-        const dataStr = dataLines.map(l => l.slice(5).trim()).join("");
-        const eventName = eventLine ? eventLine.replace("event:", "").trim() : "message";
-        if (eventName === "result") {
-          try { lastResult = JSON.parse(dataStr); } catch (_) {}
+      // Find the result data directly — look for the JSON object after event: result
+      const resultIdx = text.indexOf("event: result");
+      if (resultIdx === -1) {
+        // Check for error event
+        const errorIdx = text.indexOf("event: error");
+        if (errorIdx !== -1) {
+          const after = text.slice(errorIdx);
+          const dataMatch = after.match(/data:\s*(\{.*\})/s);
+          if (dataMatch) {
+            try { return reject(new Error(JSON.parse(dataMatch[1])?.error || "Analysis failed")); } catch (_) {}
+          }
         }
-        if (eventName === "error") {
-          try { lastError = JSON.parse(dataStr)?.error; } catch (_) {}
-        }
+        return reject(new Error("No result received. Please try again."));
       }
 
-      if (lastError) return reject(new Error(lastError));
-      if (lastResult) return resolve(lastResult as AnalysisResult);
-      reject(new Error("No result received. Please try again."));
+      // Extract everything after "event: result\ndata: "
+      const afterResult = text.slice(resultIdx);
+      const dataMatch = afterResult.match(/data:\s*(\{[\s\S]*\})/);
+      if (!dataMatch) return reject(new Error("No result received. Please try again."));
+
+      try {
+        const parsed = JSON.parse(dataMatch[1]);
+        return resolve(parsed as AnalysisResult);
+      } catch (_) {
+        // Try to find just the JSON object
+        const jsonStart = afterResult.indexOf("{");
+        const jsonEnd = afterResult.lastIndexOf("}");
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          try {
+            const parsed = JSON.parse(afterResult.slice(jsonStart, jsonEnd + 1));
+            return resolve(parsed as AnalysisResult);
+          } catch (_) {}
+        }
+        return reject(new Error("Failed to parse analysis result. Please try again."));
+      }
     }),
     onSuccess: (data) => {
       setResult(data);
