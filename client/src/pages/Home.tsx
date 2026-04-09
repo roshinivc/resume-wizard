@@ -532,7 +532,15 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [darkMode, setDarkMode] = useState(false); // Default light — user can toggle
-  const [isAdmin, setIsAdmin] = useState(!!localStorage.getItem("rw_admin"));
+  // Check admin from URL param OR localStorage — runs synchronously before render
+  const [isAdmin, setIsAdmin] = useState(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("admin");
+    if (fromUrl) {
+      localStorage.setItem("rw_admin", fromUrl);
+      return true;
+    }
+    return !!localStorage.getItem("rw_admin");
+  });
   const [showPaywall, setShowPaywall] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
@@ -540,19 +548,15 @@ export default function Home() {
   const [showLanding, setShowLanding] = useState(() => {
     const hasEmail = !!localStorage.getItem("rw_email");
     const hasAdmin = !!localStorage.getItem("rw_admin");
-    return !hasEmail && !hasAdmin;
+    const adminInUrl = !!new URLSearchParams(window.location.search).get("admin");
+    return !hasEmail && !hasAdmin && !adminInUrl;
   });
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Admin token from URL param — stored in localStorage, bypasses landing
+  // Clean ?admin= from URL after it's been saved to localStorage
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("admin");
-    if (token) {
-      localStorage.setItem("rw_admin", token);
-      setIsAdmin(true);
-      setShowLanding(false);
+    if (new URLSearchParams(window.location.search).get("admin")) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
