@@ -526,15 +526,8 @@ type Tab = "feedback" | "corrections" | "cover-letter" | "manager-note" | "why-m
 
 export default function Home() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [jobResponsibilities, setJobResponsibilities] = useState("");
-  const [jobMinQualifications, setJobMinQualifications] = useState("");
-  const [jobPrefQualifications, setJobPrefQualifications] = useState("");
-  // Combined JD for API
-  const jobDesc = [
-    jobResponsibilities ? `KEY RESPONSIBILITIES:\n${jobResponsibilities}` : "",
-    jobMinQualifications ? `MINIMUM QUALIFICATIONS:\n${jobMinQualifications}` : "",
-    jobPrefQualifications ? `PREFERRED QUALIFICATIONS:\n${jobPrefQualifications}` : "",
-  ].filter(Boolean).join("\n\n");
+  const [jobDesc, setJobDesc] = useState("");
+  const [jobDescDisplay, setJobDescDisplay] = useState("");
   const jobDescTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
@@ -783,13 +776,12 @@ export default function Home() {
 
   const loading = submitMutation.isPending;
   const done = !!result;
-  const canSubmit = !!resumeFile && jobResponsibilities.trim().length >= 10 && jobMinQualifications.trim().length >= 10 && !loading;
+  const canSubmit = !!resumeFile && jobDesc.trim().length >= 20 && !loading;
 
   function handleReset() {
     setResumeFile(null);
-    setJobResponsibilities("");
-    setJobMinQualifications("");
-    setJobPrefQualifications("");
+    setJobDesc("");
+    setJobDescDisplay("");
     setResult(null);
     submitMutation.reset();
   }
@@ -911,46 +903,23 @@ export default function Home() {
                 <DropZone file={resumeFile} onFile={f => setResumeFile(f)} disabled={loading} />
                 <p className="input-hint">PDF, DOCX, or TXT · max 10 MB</p>
               </div>
-              <div className="input-col jd-col">
-                <label className="input-label"><Briefcase size={15} />Job Description</label>
-                <div className="jd-fields">
-                  <div className="jd-field">
-                    <label className="jd-field-label">Key Responsibilities <span className="jd-field-hint">(required)</span></label>
-                    <Textarea
-                      placeholder="Paste the key responsibilities from the job posting…"
-                      value={jobResponsibilities}
-                      onChange={e => setJobResponsibilities(e.target.value)}
-                      className="jd-textarea" disabled={loading}
-                      data-testid="input-job-responsibilities" />
-                    <span className={`char-count${jobResponsibilities.length > 1200 ? " char-count--over" : jobResponsibilities.length > 1000 ? " char-count--warn" : ""}`}>
-                      {jobResponsibilities.length} / 1200
-                    </span>
-                  </div>
-                  <div className="jd-field">
-                    <label className="jd-field-label">Minimum Qualifications <span className="jd-field-hint">(required)</span></label>
-                    <Textarea
-                      placeholder="Paste the required qualifications…"
-                      value={jobMinQualifications}
-                      onChange={e => setJobMinQualifications(e.target.value)}
-                      className="jd-textarea" disabled={loading}
-                      data-testid="input-job-min-quals" />
-                    <span className={`char-count${jobMinQualifications.length > 1000 ? " char-count--over" : jobMinQualifications.length > 850 ? " char-count--warn" : ""}`}>
-                      {jobMinQualifications.length} / 1000
-                    </span>
-                  </div>
-                  <div className="jd-field">
-                    <label className="jd-field-label">Preferred Qualifications <span className="jd-field-hint">(optional)</span></label>
-                    <Textarea
-                      placeholder="Paste preferred or nice-to-have qualifications…"
-                      value={jobPrefQualifications}
-                      onChange={e => setJobPrefQualifications(e.target.value)}
-                      className="jd-textarea" disabled={loading}
-                      data-testid="input-job-pref-quals" />
-                    <span className={`char-count${jobPrefQualifications.length > 500 ? " char-count--over" : jobPrefQualifications.length > 400 ? " char-count--warn" : ""}`}>
-                      {jobPrefQualifications.length} / 500
-                    </span>
-                  </div>
-                </div>
+              <div className="input-col">
+                <label className="input-label" htmlFor="job"><Briefcase size={15} />Job Description</label>
+                <Textarea id="job" data-testid="input-job"
+                  placeholder="Paste the full job description here…"
+                  value={jobDesc}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setJobDesc(val);
+                    if (jobDescTimer.current) clearTimeout(jobDescTimer.current);
+                    jobDescTimer.current = setTimeout(() => setJobDescDisplay(val), 150);
+                  }}
+                  className="big-textarea" disabled={loading} />
+                <span className={`char-count${jobDescDisplay.length > 2700 ? " char-count--over" : jobDescDisplay.length > 2400 ? " char-count--warn" : ""}`}>
+                  {jobDescDisplay.length} / 2700 chars
+                  {jobDescDisplay.length > 2700 && " — will be trimmed to 2700"}
+                  {jobDescDisplay.length > 2400 && jobDescDisplay.length <= 2700 && " — near limit"}
+                </span>
               </div>
             </div>
             <div className="submit-row">
