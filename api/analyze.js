@@ -48,13 +48,15 @@ async function incrementUsage(email) {
   }
 }
 
-// Fast prompt — optimized for Vercel 30s limit
-const SYSTEM_PROMPT = `Honest recruiter+ATS expert. Strict scoring. Return ONLY valid JSON, no markdown.
-Scores: 9-10=rare. 7-8=good. 5-6=partial. 3-4=weak. 1-2=poor. Most=4-7.
-ATS: check missing JD keywords, no summary section, generic title vs JD.
+// Balanced prompt — quality feedback within Vercel 30s limit
+const SYSTEM_PROMPT = `You are a strict, experienced recruiter and ATS expert. Analyze the resume against the job description. Be specific — name actual missing keywords, actual skill gaps, actual title mismatches. No generic feedback. Return ONLY valid JSON, no markdown.
 
-{"score":6,"scoreRationale":"1-2 sentences.","atsScore":65,"atsIssues":["issue1","issue2"],"coverLetter":"80 words max. Dear Hiring Manager, [specific]. Sincerely.","hiringManagerNote":"4 lines. Direct. 1 achievement. Ask for call.","whyBestCandidate":"3 lines separated by \\n.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"1 sentence.","details":["d1","d2"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"1 sentence.","details":["d1","d2"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"1 sentence.","details":["d1","d2"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"1 sentence.","details":["d1","d2"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"1 sentence.","details":["d1","d2"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 2 changes.","details":["change1","change2"]}],"corrections":[{"section":"s","original":"exact text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"}]}
-Rules: ratings=strong/moderate/weak. corrections=rewrite only existing text.`;
+Scoring: 9-10=rare perfect match. 7-8=good,1-2 gaps. 5-6=partial. 3-4=weak. 1-2=poor. Most resumes score 4-7. Do not inflate.
+ATS checks: missing JD keywords, tables/columns, missing summary section, generic title vs JD title, acronyms not spelled out.
+
+Return this JSON (exact field order, be specific and actionable in every field):
+{"score":6,"scoreRationale":"2 specific sentences: biggest strength + biggest gap.","atsScore":65,"atsIssues":["Specific issue 1","Specific issue 2","Specific issue 3"],"coverLetter":"100 words. Dear Hiring Manager, [specific opening referencing role]. [2 sentences connecting real experience to this role]. Sincerely.","hiringManagerNote":"5-6 lines. Direct and specific. Opens with something from JD. 2 real achievements. Ends with ask for call.","whyBestCandidate":"4 lines separated by \\n. Each: Strength: evidence — why it matters for this role.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"Which exact keywords from JD are missing or present.","details":["Specific finding 1","Specific finding 2","Specific finding 3"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"Seniority and domain match to this role.","details":["Specific finding 1","Specific finding 2","Specific finding 3"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"Required skills present vs missing.","details":["Specific finding 1","Specific finding 2","Specific finding 3"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"Are achievements quantified with numbers?","details":["Specific finding 1","Specific finding 2","Specific finding 3"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"Will this resume pass ATS filters?","details":["Specific ATS finding 1","Specific ATS finding 2","Specific ATS finding 3"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"3 highest-impact changes to make now.","details":["Actionable change 1","Actionable change 2","Actionable change 3"]}],"corrections":[{"section":"Section name","original":"Exact text from resume","improved":"Stronger rewrite with keywords","why":"Why this improves ATS and recruiter read"},{"section":"Section name","original":"Exact text","improved":"Stronger rewrite","why":"Reason"},{"section":"Section name","original":"Exact text","improved":"Stronger rewrite","why":"Reason"}]}
+Rules: ratings=strong/moderate/weak only. corrections=only rewrite text that exists in the resume, never fabricate.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -118,7 +120,7 @@ export default async function handler(req, res) {
     // Single non-streaming call — simpler, more reliable, ~5-10s for Haiku
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 1500,
+      max_tokens: 2000,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
