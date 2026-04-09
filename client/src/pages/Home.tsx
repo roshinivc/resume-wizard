@@ -747,25 +747,28 @@ export default function Home() {
       // Read full response as text (Vercel buffers SSE anyway)
       const text = await res.text();
 
-      // Find last result event in the SSE stream
-      const lines = text.split("\n");
+      // Parse SSE: find data: lines after event: result
+      // The data may be very long — collect all data: lines after the result event
       let lastResult = null;
       let lastError = null;
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.startsWith("event: result")) {
-          const dataLine = lines[i + 1];
-          if (dataLine?.startsWith("data:")) {
-            try { lastResult = JSON.parse(dataLine.slice(5).trim()); } catch (_) {}
-          }
+
+      // Split on double newline (SSE event separator)
+      const events = text.split("\n\n");
+      for (const event of events) {
+        const eventLine = event.split("\n").find(l => l.startsWith("event:"));
+        // Collect ALL data: lines and join them (in case data spans multiple lines)
+        const dataLines = event.split("\n").filter(l => l.startsWith("data:"));
+        if (!dataLines.length) continue;
+        const dataStr = dataLines.map(l => l.slice(5).trim()).join("");
+        const eventName = eventLine ? eventLine.replace("event:", "").trim() : "message";
+        if (eventName === "result") {
+          try { lastResult = JSON.parse(dataStr); } catch (_) {}
         }
-        if (line.startsWith("event: error")) {
-          const dataLine = lines[i + 1];
-          if (dataLine?.startsWith("data:")) {
-            try { lastError = JSON.parse(dataLine.slice(5).trim())?.error; } catch (_) {}
-          }
+        if (eventName === "error") {
+          try { lastError = JSON.parse(dataStr)?.error; } catch (_) {}
         }
       }
+
       if (lastError) return reject(new Error(lastError));
       if (lastResult) return resolve(lastResult as AnalysisResult);
       reject(new Error("No result received. Please try again."));
