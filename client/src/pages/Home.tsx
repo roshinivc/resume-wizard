@@ -922,8 +922,8 @@ export default function Home() {
                       onChange={e => setJobResponsibilities(e.target.value)}
                       className="jd-textarea" disabled={loading}
                       data-testid="input-job-responsibilities" />
-                    <span className={`char-count${jobResponsibilities.length > 1000 ? " char-count--over" : jobResponsibilities.length > 850 ? " char-count--warn" : ""}`}>
-                      {jobResponsibilities.length} / 1000
+                    <span className={`char-count${jobResponsibilities.length > 1200 ? " char-count--over" : jobResponsibilities.length > 1000 ? " char-count--warn" : ""}`}>
+                      {jobResponsibilities.length} / 1200
                     </span>
                   </div>
                   <div className="jd-field">
@@ -946,8 +946,8 @@ export default function Home() {
                       onChange={e => setJobPrefQualifications(e.target.value)}
                       className="jd-textarea" disabled={loading}
                       data-testid="input-job-pref-quals" />
-                    <span className={`char-count${jobPrefQualifications.length > 900 ? " char-count--over" : jobPrefQualifications.length > 750 ? " char-count--warn" : ""}`}>
-                      {jobPrefQualifications.length} / 900
+                    <span className={`char-count${jobPrefQualifications.length > 500 ? " char-count--over" : jobPrefQualifications.length > 400 ? " char-count--warn" : ""}`}>
+                      {jobPrefQualifications.length} / 500
                     </span>
                   </div>
                 </div>
