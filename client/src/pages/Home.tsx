@@ -32,6 +32,8 @@ interface Correction {
 interface AnalysisResult {
   score: number;
   scoreRationale: string;
+  atsScore?: number;
+  atsIssues?: string[];
   sections: FeedbackSection[];
   corrections: Correction[];
   coverLetter: string;
@@ -912,6 +914,28 @@ export default function Home() {
                 <ScoreRing score={result.score} />
                 <p className="score-label">Match Score</p>
               </div>
+              {/* ATS Score */}
+              {result.atsScore !== undefined && (
+                <div className="ats-score-wrap">
+                  <div className={`ats-score-ring ${
+                    result.atsScore >= 75 ? "ats-score-ring--good" :
+                    result.atsScore >= 50 ? "ats-score-ring--mid" : "ats-score-ring--poor"
+                  }`}>
+                    <span className="ats-score-val">{result.atsScore}</span>
+                    <span className="ats-score-pct">%</span>
+                  </div>
+                  <p className="score-label">ATS Score</p>
+                  {result.atsIssues && result.atsIssues.length > 0 && (
+                    <div className="ats-issues">
+                      {result.atsIssues.map((issue, i) => (
+                        <div key={i} className="ats-issue-item">
+                          <span className="ats-issue-dot" />  {issue}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="score-rationale">
                 <h2 className="score-heading">
                   {result.score >= 8 ? "Great match" : result.score >= 6 ? "Solid foundation" : "Room to improve"}

@@ -2003,3 +2003,66 @@ button { cursor: pointer; background: none; border: none; }
   .input-grid { grid-template-columns: 1fr; }
   .result-tabs { flex-wrap: wrap; }
 }
+
+/* ─── ATS Score ──────────────────────────────────────────────────────────────── */
+.ats-score-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 120px;
+}
+.ats-score-ring {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 6px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: 1px;
+  position: relative;
+}
+.ats-score-ring--good { border-color: #22c55e; }
+.ats-score-ring--mid  { border-color: #f59e0b; }
+.ats-score-ring--poor { border-color: #ef4444; }
+.ats-score-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+.ats-score-ring--good .ats-score-val { color: #22c55e; }
+.ats-score-ring--mid  .ats-score-val { color: #f59e0b; }
+.ats-score-ring--poor .ats-score-val { color: #ef4444; }
+.ats-score-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+.ats-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-width: 220px;
+}
+.ats-issue-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+.ats-issue-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
