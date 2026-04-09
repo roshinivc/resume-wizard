@@ -120,11 +120,11 @@ export default async function handler(req, res) {
     // Single non-streaming call — simpler, more reliable, ~5-10s for Haiku
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 2000,
+      max_tokens: 2500,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 2700)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2900)}`
+        content: `RESUME:\n${resumeText.slice(0, 1800)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1800)}`
       }]
     });
 
@@ -161,7 +161,12 @@ export default async function handler(req, res) {
       catch { throw new Error("Analysis response was incomplete. Please try again."); }
     }
 
-    if (!parsed.score || !parsed.sections) throw new Error("Incomplete analysis. Please try again.");
+    // Be lenient — if we got a score we have enough to show something
+    if (!parsed.score) throw new Error("Incomplete analysis. Please try again.");
+    // Default missing fields
+    parsed.sections = parsed.sections || [];
+    parsed.corrections = parsed.corrections || [];
+    parsed.atsIssues = parsed.atsIssues || [];
 
     // Increment usage server-side
     if (!isAdmin) await incrementUsage(emailHeader);
