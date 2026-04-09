@@ -866,10 +866,20 @@ export default function Home() {
                 <ZapIcon size={11} /> Pay-as-you-go
               </span>
             )}
-            {usageStatus?.isAdmin && (
-              <span className="usage-badge usage-badge--admin">
-                Admin
-              </span>
+            {(usageStatus?.isAdmin || adminTokenExists) && (
+              <>
+                <span className="usage-badge usage-badge--admin">Admin</span>
+                <button
+                  className="header-exit-admin-btn"
+                  onClick={() => {
+                    localStorage.removeItem("rw_admin");
+                    window.location.reload();
+                  }}
+                  title="Exit admin mode"
+                >
+                  Exit Admin
+                </button>
+              </>
             )}
             <Link href="/corporate" className="landing-bottom-link" style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--color-primary)" }}>
               <Briefcase size={13} style={{ display: "inline", marginRight: 4 }} />

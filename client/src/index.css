@@ -2069,3 +2069,19 @@ button { cursor: pointer; background: none; border: none; }
   flex-shrink: 0;
   margin-top: 6px;
 }
+
+/* ─── Exit Admin Button ──────────────────────────────────────────────────────── */
+.header-exit-admin-btn {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(239,68,68,.1);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,.25);
+  cursor: pointer;
+  transition: all var(--transition-interactive);
+}
+.header-exit-admin-btn:hover {
+  background: rgba(239,68,68,.2);
+}
