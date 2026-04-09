@@ -542,7 +542,7 @@ export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Admin token from URL param — stored in sessionStorage, also bypasses landing
+  // Admin token from URL param — stored in localStorage, bypasses landing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("admin");
@@ -550,6 +550,8 @@ export default function Home() {
       localStorage.setItem("rw_admin", token);
       setShowLanding(false);
       window.history.replaceState({}, "", window.location.pathname);
+      // Refetch usage immediately so isAdmin/paid status reflects correctly
+      setTimeout(() => refetchUsage(), 100);
     }
   }, []);
 
@@ -632,7 +634,7 @@ export default function Home() {
 
   // Check usage status — passes email header if logged in
   const { data: usageStatus, refetch: refetchUsage } = useQuery<UsageStatus>({
-    queryKey: ["/api/usage", loggedInEmail],
+    queryKey: ["/api/usage", loggedInEmail, !!localStorage.getItem("rw_admin")],
     queryFn: async () => {
       const adminToken = localStorage.getItem("rw_admin") || "";
       const email = localStorage.getItem("rw_email") || "";
