@@ -655,13 +655,15 @@ export default function Home() {
     staleTime: 0,
   });
 
-  const isPaid = isAdmin || usageStatus?.paid || usageStatus?.isAdmin || false;
+  // isPaid: check isAdmin state first (set synchronously), then API response
+  const adminTokenExists = !!localStorage.getItem("rw_admin");
+  const isPaid = isAdmin || adminTokenExists || usageStatus?.paid || usageStatus?.isAdmin || false;
   const paygLink = import.meta.env.VITE_STRIPE_PAYG_LINK || "#";
   const monthlyLink = import.meta.env.VITE_STRIPE_MONTHLY_LINK || "#";
 
-  // If server says email required, bounce back to landing
+  // If server says email required, bounce back to landing (skip for admin)
   useEffect(() => {
-    if (usageStatus?.requiresEmail) setShowLanding(true);
+    if (usageStatus?.requiresEmail && !adminTokenExists) setShowLanding(true);
   }, [usageStatus]);
 
   useEffect(() => {
