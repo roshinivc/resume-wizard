@@ -2085,3 +2085,30 @@ button { cursor: pointer; background: none; border: none; }
 .header-exit-admin-btn:hover {
   background: rgba(239,68,68,.2);
 }
+
+/* ─── JD Three-Field Layout ──────────────────────────────────────────────────── */
+.jd-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.jd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.jd-field-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-text);
+}
+.jd-field-hint {
+  font-weight: 400;
+  color: var(--color-text-faint);
+  margin-left: 4px;
+}
+.jd-textarea {
+  min-height: 80px !important;
+  resize: vertical;
+  font-size: var(--text-sm) !important;
+}
