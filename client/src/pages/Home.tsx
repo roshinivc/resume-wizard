@@ -527,6 +527,8 @@ type Tab = "feedback" | "corrections" | "cover-letter" | "manager-note" | "why-m
 export default function Home() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState("");
+  const [jobDescDisplay, setJobDescDisplay] = useState(""); // debounced for char count
+  const jobDescTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [darkMode, setDarkMode] = useState(false); // Default light — user can toggle
@@ -888,12 +890,19 @@ export default function Home() {
                 <label className="input-label" htmlFor="job"><Briefcase size={15} />Job Description</label>
                 <Textarea id="job" data-testid="input-job"
                   placeholder="Paste the full job description here…"
-                  value={jobDesc} onChange={e => setJobDesc(e.target.value)}
+                  value={jobDesc}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setJobDesc(val);
+                    // Debounce the char count display to avoid blocking UI
+                    if (jobDescTimer.current) clearTimeout(jobDescTimer.current);
+                    jobDescTimer.current = setTimeout(() => setJobDescDisplay(val), 150);
+                  }}
                   className="big-textarea" disabled={loading} />
-                <span className={`char-count${jobDesc.length > 2500 ? " char-count--over" : jobDesc.length > 2300 ? " char-count--warn" : ""}`}>
-                  {jobDesc.length} / 2500 chars
-                  {jobDesc.length > 2500 && " — will be trimmed to 2500"}
-                  {jobDesc.length > 2300 && jobDesc.length <= 2500 && " — near limit"}
+                <span className={`char-count${jobDescDisplay.length > 2500 ? " char-count--over" : jobDescDisplay.length > 2300 ? " char-count--warn" : ""}`}>
+                  {jobDescDisplay.length} / 2500 chars
+                  {jobDescDisplay.length > 2500 && " — will be trimmed to 2500"}
+                  {jobDescDisplay.length > 2300 && jobDescDisplay.length <= 2500 && " — near limit"}
                 </span>
               </div>
             </div>
