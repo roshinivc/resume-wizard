@@ -915,10 +915,10 @@ export default function Home() {
                     jobDescTimer.current = setTimeout(() => setJobDescDisplay(val), 150);
                   }}
                   className="big-textarea" disabled={loading} />
-                <span className={`char-count${jobDescDisplay.length > 3500 ? " char-count--over" : jobDescDisplay.length > 3200 ? " char-count--warn" : ""}`}>
-                  {jobDescDisplay.length} / 3500 chars
-                  {jobDescDisplay.length > 3500 && " — will be trimmed to 3500"}
-                  {jobDescDisplay.length > 3200 && jobDescDisplay.length <= 3500 && " — near limit"}
+                <span className={`char-count${jobDescDisplay.length > 2700 ? " char-count--over" : jobDescDisplay.length > 2400 ? " char-count--warn" : ""}`}>
+                  {jobDescDisplay.length} / 2700 chars
+                  {jobDescDisplay.length > 2700 && " — will be trimmed to 2700"}
+                  {jobDescDisplay.length > 2400 && jobDescDisplay.length <= 2700 && " — near limit"}
                 </span>
               </div>
             </div>
