@@ -48,16 +48,13 @@ async function incrementUsage(email) {
   }
 }
 
-// Strict ATS-aware prompt — kept short for speed
-const SYSTEM_PROMPT = `Brutally honest recruiter and ATS expert. Analyze resume vs job description. Be specific, name actual missing keywords. Return ONLY valid JSON.
+// Fast prompt — optimized for Vercel 30s limit
+const SYSTEM_PROMPT = `Honest recruiter+ATS expert. Strict scoring. Return ONLY valid JSON, no markdown.
+Scores: 9-10=rare. 7-8=good. 5-6=partial. 3-4=weak. 1-2=poor. Most=4-7.
+ATS: check missing JD keywords, no summary section, generic title vs JD.
 
-Scoring: 9-10=rare perfect match. 7-8=good,1-2 gaps. 5-6=partial. 3-4=weak. 1-2=poor. Most score 4-7.
-ATS checks: missing JD keywords, tables/columns, no summary section, generic titles vs JD titles, acronyms not spelled out.
-
-JSON (exact field order):
-{"score":6,"scoreRationale":"2 sentences: strength + gap.","atsScore":65,"atsIssues":["issue1","issue2","issue3"],"coverLetter":"120 words. Dear Hiring Manager, [specific to this role]. Sincerely.","hiringManagerNote":"6 lines. Direct. Specific to JD. 2 achievements. Ends with call ask.","whyBestCandidate":"4 lines separated by \\n. Strength: evidence — relevance.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"Missing keywords.","details":["d1","d2","d3"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"Seniority match.","details":["d1","d2","d3"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"Skills gap.","details":["d1","d2","d3"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"Quantified?","details":["d1","d2","d3"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"ATS status.","details":["d1","d2","d3"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top changes.","details":["d1","d2","d3"]}],"corrections":[{"section":"s","original":"exact resume text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"}]}
-
-Rules: ratings = strong/moderate/weak only. corrections = only rewrite existing resume text.`;
+{"score":6,"scoreRationale":"1-2 sentences.","atsScore":65,"atsIssues":["issue1","issue2"],"coverLetter":"80 words max. Dear Hiring Manager, [specific]. Sincerely.","hiringManagerNote":"4 lines. Direct. 1 achievement. Ask for call.","whyBestCandidate":"3 lines separated by \\n.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"1 sentence.","details":["d1","d2"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"1 sentence.","details":["d1","d2"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"1 sentence.","details":["d1","d2"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"1 sentence.","details":["d1","d2"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"1 sentence.","details":["d1","d2"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 2 changes.","details":["change1","change2"]}],"corrections":[{"section":"s","original":"exact text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"}]}
+Rules: ratings=strong/moderate/weak. corrections=rewrite only existing text.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -121,7 +118,7 @@ export default async function handler(req, res) {
     // Single non-streaming call — simpler, more reliable, ~5-10s for Haiku
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 4096,
+      max_tokens: 1500,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
