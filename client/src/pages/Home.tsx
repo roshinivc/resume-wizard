@@ -737,32 +737,30 @@ export default function Home() {
         return reject(new Error(err.error || "Failed to analyze"));
       }
 
-      // Read SSE stream
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      // Read full response as text (Vercel buffers SSE anyway)
+      const text = await res.text();
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (value) buffer += decoder.decode(value, { stream: !done });
-        const parts = buffer.split("\n\n");
-        buffer = done ? "" : (parts.pop() ?? "");
-        const toProcess = done ? parts : parts.slice(0, -1);
-        // If done, process all remaining parts including last
-        const allParts = done ? [...(toProcess), ...(buffer ? [buffer] : [])] : toProcess;
-        for (const part of allParts) {
-          const eventLine = part.split("\n").find(l => l.startsWith("event:"));
-          const dataLine = part.split("\n").find(l => l.startsWith("data:"));
-          if (!dataLine) continue;
-          const eventName = eventLine ? eventLine.replace("event:", "").trim() : "message";
-          try {
-            const data = JSON.parse(dataLine.replace("data:", "").trim());
-            if (eventName === "result") return resolve(data as AnalysisResult);
-            if (eventName === "error") return reject(new Error(data.error));
-          } catch (_) {}
+      // Find last result event in the SSE stream
+      const lines = text.split("\n");
+      let lastResult = null;
+      let lastError = null;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith("event: result")) {
+          const dataLine = lines[i + 1];
+          if (dataLine?.startsWith("data:")) {
+            try { lastResult = JSON.parse(dataLine.slice(5).trim()); } catch (_) {}
+          }
         }
-        if (done) break;
+        if (line.startsWith("event: error")) {
+          const dataLine = lines[i + 1];
+          if (dataLine?.startsWith("data:")) {
+            try { lastError = JSON.parse(dataLine.slice(5).trim())?.error; } catch (_) {}
+          }
+        }
       }
+      if (lastError) return reject(new Error(lastError));
+      if (lastResult) return resolve(lastResult as AnalysisResult);
       reject(new Error("No result received. Please try again."));
     }),
     onSuccess: (data) => {
