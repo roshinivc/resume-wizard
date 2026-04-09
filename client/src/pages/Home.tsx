@@ -744,19 +744,24 @@ export default function Home() {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        if (value) buffer += decoder.decode(value, { stream: !done });
         const parts = buffer.split("\n\n");
-        buffer = parts.pop() ?? "";
-        for (const part of parts) {
+        buffer = done ? "" : (parts.pop() ?? "");
+        const toProcess = done ? parts : parts.slice(0, -1);
+        // If done, process all remaining parts including last
+        const allParts = done ? [...(toProcess), ...(buffer ? [buffer] : [])] : toProcess;
+        for (const part of allParts) {
           const eventLine = part.split("\n").find(l => l.startsWith("event:"));
           const dataLine = part.split("\n").find(l => l.startsWith("data:"));
           if (!dataLine) continue;
           const eventName = eventLine ? eventLine.replace("event:", "").trim() : "message";
-          const data = JSON.parse(dataLine.replace("data:", "").trim());
-          if (eventName === "result") return resolve(data as AnalysisResult);
-          if (eventName === "error") return reject(new Error(data.error));
+          try {
+            const data = JSON.parse(dataLine.replace("data:", "").trim());
+            if (eventName === "result") return resolve(data as AnalysisResult);
+            if (eventName === "error") return reject(new Error(data.error));
+          } catch (_) {}
         }
+        if (done) break;
       }
       reject(new Error("No result received. Please try again."));
     }),
