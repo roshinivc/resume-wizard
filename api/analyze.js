@@ -48,34 +48,16 @@ async function incrementUsage(email) {
   }
 }
 
-// Strict, ATS-aware prompt
-const SYSTEM_PROMPT = `You are a brutally honest senior recruiter and ATS expert. Analyze this resume against the job description. Be direct, specific, and strict. Do not inflate scores. Return ONLY valid JSON, no markdown, no commentary.
+// Strict ATS-aware prompt — kept short for speed
+const SYSTEM_PROMPT = `Brutally honest recruiter and ATS expert. Analyze resume vs job description. Be specific, name actual missing keywords. Return ONLY valid JSON.
 
-SCORING RULES:
-- 9-10: Near-perfect match. Rare. Every key requirement met with strong evidence.
-- 7-8: Good match. Most requirements met. 1-2 gaps.
-- 5-6: Partial match. Core skills present but meaningful gaps exist.
-- 3-4: Weak match. Missing critical requirements.
-- 1-2: Poor match. Wrong experience level or domain.
-- Most resumes score 4-7. Be honest, not encouraging.
+Scoring: 9-10=rare perfect match. 7-8=good,1-2 gaps. 5-6=partial. 3-4=weak. 1-2=poor. Most score 4-7.
+ATS checks: missing JD keywords, tables/columns, no summary section, generic titles vs JD titles, acronyms not spelled out.
 
-ATS RULES TO CHECK:
-- Missing keywords from JD = ATS fail
-- Tables, columns, headers/footers = ATS parsing failure
-- Images, graphics, icons = ATS cannot read
-- Generic job titles vs JD titles = keyword mismatch
-- Acronyms without spelling out = missed matches
-- Missing sections (Summary, Skills, Experience, Education) = incomplete
-- File format issues if detected
+JSON (exact field order):
+{"score":6,"scoreRationale":"2 sentences: strength + gap.","atsScore":65,"atsIssues":["issue1","issue2","issue3"],"coverLetter":"120 words. Dear Hiring Manager, [specific to this role]. Sincerely.","hiringManagerNote":"6 lines. Direct. Specific to JD. 2 achievements. Ends with call ask.","whyBestCandidate":"4 lines separated by \\n. Strength: evidence — relevance.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"Missing keywords.","details":["d1","d2","d3"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"Seniority match.","details":["d1","d2","d3"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"Skills gap.","details":["d1","d2","d3"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"Quantified?","details":["d1","d2","d3"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"ATS status.","details":["d1","d2","d3"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top changes.","details":["d1","d2","d3"]}],"corrections":[{"section":"s","original":"exact resume text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"},{"section":"s","original":"text","improved":"rewrite","why":"reason"}]}
 
-Return this exact JSON structure — fields in this exact order:
-{"score":6,"scoreRationale":"2 blunt sentences. Biggest strength and biggest gap.","atsScore":62,"atsIssues":["ATS issue 1","ATS issue 2","ATS issue 3"],"coverLetter":"150 words. Dear Hiring Manager, [specific opening]. [2-3 sentences connecting real experience to this role]. Sincerely.","hiringManagerNote":"6-8 lines. Direct. Opens with something specific from JD. 2 real achievements connected to role needs. Ends with ask for a call.","whyBestCandidate":"5 lines separated by \\n. Each: Strength: Evidence from resume — Why it matters for this role.","sections":[{"category":"Keyword Match","icon":"search","rating":"moderate","summary":"Which exact keywords from JD are missing.","details":["Finding 1","Finding 2","Finding 3"]},{"category":"Work Experience","icon":"briefcase","rating":"strong","summary":"Seniority and domain match.","details":["Finding 1","Finding 2","Finding 3"]},{"category":"Skills Alignment","icon":"zap","rating":"moderate","summary":"Required skills present vs missing.","details":["Finding 1","Finding 2","Finding 3"]},{"category":"Impact & Metrics","icon":"trending-up","rating":"weak","summary":"Are achievements quantified?","details":["Finding 1","Finding 2","Finding 3"]},{"category":"ATS Compatibility","icon":"layout","rating":"strong","summary":"Will this pass ATS filters?","details":["Finding 1","Finding 2","Finding 3"]},{"category":"Quick Wins","icon":"star","rating":"strong","summary":"Top 3 highest-ROI changes.","details":["Change 1","Change 2","Change 3"]}],"corrections":[{"section":"Section","original":"Exact text from resume","improved":"Stronger rewrite","why":"Why this improves ATS and readability"},{"section":"Section","original":"Exact text","improved":"Rewrite","why":"Reason"},{"section":"Section","original":"Exact text","improved":"Rewrite","why":"Reason"}]}
-
-CRITICAL RULES:
-- rating values MUST be exactly: strong, moderate, or weak
-- corrections MUST only rewrite text that exists in the resume — never fabricate
-- atsScore is 0-100 (percentage likelihood of passing ATS filters)
-- Be specific: name actual missing keywords, actual job titles, actual skills gaps`;
+Rules: ratings = strong/moderate/weak only. corrections = only rewrite existing resume text.`;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
