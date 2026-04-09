@@ -143,7 +143,7 @@ export default async function handler(req, res) {
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 2700)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2700)}`
+        content: `RESUME:\n${resumeText.slice(0, 2700)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2900)}`
       }]
     });
 
