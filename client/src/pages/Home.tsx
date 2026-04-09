@@ -719,16 +719,23 @@ export default function Home() {
 
       let res: Response;
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 28000);
         res = await fetch(`/api/analyze`, {
           method: "POST",
           body: form,
+          signal: controller.signal,
           headers: {
             "x-fp": fingerprint,
             "x-admin-token": adminToken,
             ...(email ? { "x-email": email } : {}),
           },
         });
-      } catch {
+        clearTimeout(timeout);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name === "AbortError") {
+          return reject(new Error("Analysis timed out — please try again with a shorter job description."));
+        }
         return reject(new Error("Network error — please try again."));
       }
 
@@ -930,7 +937,7 @@ export default function Home() {
                 disabled={!canSubmit} className="analyze-btn" size="lg">
                 {loading ? <><Loader2 size={18} className="mr-2 animate-spin" />Analyzing…</> : "Analyze Resume"}
               </Button>
-              {loading && <p className="loading-hint">Reviewing your resume against the job requirements…</p>}
+              {loading && <p className="loading-hint">Analyzing your resume… this takes up to 25 seconds</p>}
             </div>
           </section>
         )}
