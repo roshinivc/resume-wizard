@@ -530,6 +530,7 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("feedback");
   const [darkMode, setDarkMode] = useState(false); // Default light — user can toggle
+  const [isAdmin, setIsAdmin] = useState(!!localStorage.getItem("rw_admin"));
   const [showPaywall, setShowPaywall] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
@@ -548,10 +549,9 @@ export default function Home() {
     const token = params.get("admin");
     if (token) {
       localStorage.setItem("rw_admin", token);
+      setIsAdmin(true);
       setShowLanding(false);
       window.history.replaceState({}, "", window.location.pathname);
-      // Refetch usage immediately so isAdmin/paid status reflects correctly
-      setTimeout(() => refetchUsage(), 100);
     }
   }, []);
 
@@ -634,7 +634,7 @@ export default function Home() {
 
   // Check usage status — passes email header if logged in
   const { data: usageStatus, refetch: refetchUsage } = useQuery<UsageStatus>({
-    queryKey: ["/api/usage", loggedInEmail, !!localStorage.getItem("rw_admin")],
+    queryKey: ["/api/usage", loggedInEmail, isAdmin],
     queryFn: async () => {
       const adminToken = localStorage.getItem("rw_admin") || "";
       const email = localStorage.getItem("rw_email") || "";
@@ -649,7 +649,7 @@ export default function Home() {
     staleTime: 0,
   });
 
-  const isPaid = usageStatus?.paid || usageStatus?.isAdmin || false;
+  const isPaid = isAdmin || usageStatus?.paid || usageStatus?.isAdmin || false;
   const paygLink = import.meta.env.VITE_STRIPE_PAYG_LINK || "#";
   const monthlyLink = import.meta.env.VITE_STRIPE_MONTHLY_LINK || "#";
 
