@@ -121,11 +121,11 @@ export default async function handler(req, res) {
     // Single non-streaming call — simpler, more reliable, ~5-10s for Haiku
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 2800,
+      max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{
         role: "user",
-        content: `RESUME:\n${resumeText.slice(0, 3000)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 1500)}`
+        content: `RESUME:\n${resumeText.slice(0, 6000)}\n\nJOB DESCRIPTION:\n${jobDescription.slice(0, 2700)}`
       }]
     });
 
