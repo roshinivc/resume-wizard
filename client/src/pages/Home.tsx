@@ -962,7 +962,7 @@ export default function Home() {
             <div className="score-hero">
               <div className="score-ring-wrap">
                 <ScoreRing score={result.score} />
-                <p className="score-label">Match Score</p>
+                <p className="score-label">Recruiter Score</p>
               </div>
               <div className="score-rationale">
                 <h2 className="score-heading">
