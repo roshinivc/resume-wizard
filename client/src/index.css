@@ -2200,3 +2200,10 @@ button { cursor: pointer; background: none; border: none; }
   font-weight: 700;
   flex-shrink: 0;
 }
+
+.skill-gap-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-top: var(--space-2);
+}

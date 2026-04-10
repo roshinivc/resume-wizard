@@ -29,16 +29,10 @@ interface Correction {
   why: string;
 }
 
-interface Course {
-  title: string;
-  platform: string;
-  url: string;
-  duration: string;
-}
 interface SkillGap {
   skill: string;
   level: string;
-  courses: Course[];
+  note: string;
 }
 interface AnalysisResult {
   score: number;
@@ -1089,18 +1083,7 @@ export default function Home() {
                         <span className="skill-gap-name">{gap.skill}</span>
                         <span className={`skill-gap-level skill-gap-level--${gap.level}`}>{gap.level}</span>
                       </div>
-                      <p className="skill-gap-courses-title">Top 3 courses to build this skill:</p>
-                      <div className="skill-gap-courses">
-                        {gap.courses?.map((course, j) => (
-                          <a key={j} href={course.url} target="_blank" rel="noopener noreferrer" className="skill-gap-course">
-                            <div className="skill-gap-course-info">
-                              <span className="skill-gap-course-title">{course.title}</span>
-                              <span className="skill-gap-course-meta">{course.platform} · {course.duration}</span>
-                            </div>
-                            <span className="skill-gap-course-arrow">→</span>
-                          </a>
-                        ))}
-                      </div>
+                      {gap.note && <p className="skill-gap-note">{gap.note}</p>}
                     </div>
                   ))
                 )}
