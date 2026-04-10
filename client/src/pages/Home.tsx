@@ -29,11 +29,23 @@ interface Correction {
   why: string;
 }
 
+interface Course {
+  title: string;
+  platform: string;
+  url: string;
+  duration: string;
+}
+interface SkillGap {
+  skill: string;
+  level: string;
+  courses: Course[];
+}
 interface AnalysisResult {
   score: number;
   scoreRationale: string;
   atsScore?: number;
   atsIssues?: string[];
+  skillsGap?: SkillGap[];
   sections: FeedbackSection[];
   corrections: Correction[];
   coverLetter: string;
@@ -522,7 +534,7 @@ function DropZone({ file, onFile, disabled }: { file: File | null; onFile: (f: F
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = "feedback" | "corrections" | "cover-letter" | "manager-note" | "why-me";
+type Tab = "feedback" | "corrections" | "cover-letter" | "manager-note" | "why-me" | "skills-gap";
 
 export default function Home() {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -1026,6 +1038,13 @@ export default function Home() {
                 onClick={() => setActiveTab("why-me")}>
                 Why I'm the Best Fit
               </button>
+              <button className={`result-tab${activeTab === "skills-gap" ? " result-tab--active" : ""}`}
+                onClick={() => setActiveTab("skills-gap")}>
+                Skills Gap
+                {result.skillsGap && result.skillsGap.length > 0 && (
+                  <span className="tab-badge">{result.skillsGap.length}</span>
+                )}
+              </button>
             </div>
 
             {/* Tab content */}
@@ -1054,6 +1073,38 @@ export default function Home() {
               isPaid
                 ? <CoverLetterPanel text={result.hiringManagerNote} />
                 : <LockedTab onUnlock={() => setShowPaywall(true)} />
+            )}
+
+            {activeTab === "skills-gap" && (
+              !isPaid ? <LockedTab onUnlock={() => setShowPaywall(true)} /> :
+              <div className="skills-gap-panel">
+                {(!result.skillsGap || result.skillsGap.length === 0) ? (
+                  <div className="skills-gap-empty">
+                    <p>No significant skill gaps detected for this role. Your resume aligns well with the required skills.</p>
+                  </div>
+                ) : (
+                  result.skillsGap.map((gap, i) => (
+                    <div key={i} className="skill-gap-card">
+                      <div className="skill-gap-header">
+                        <span className="skill-gap-name">{gap.skill}</span>
+                        <span className={`skill-gap-level skill-gap-level--${gap.level}`}>{gap.level}</span>
+                      </div>
+                      <p className="skill-gap-courses-title">Top 3 courses to build this skill:</p>
+                      <div className="skill-gap-courses">
+                        {gap.courses?.map((course, j) => (
+                          <a key={j} href={course.url} target="_blank" rel="noopener noreferrer" className="skill-gap-course">
+                            <div className="skill-gap-course-info">
+                              <span className="skill-gap-course-title">{course.title}</span>
+                              <span className="skill-gap-course-meta">{course.platform} · {course.duration}</span>
+                            </div>
+                            <span className="skill-gap-course-arrow">→</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
 
             {activeTab === "why-me" && (
